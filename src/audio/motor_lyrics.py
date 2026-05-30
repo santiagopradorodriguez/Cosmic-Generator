@@ -447,7 +447,11 @@ class LyricsEngine:
         img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(img_pil)
         
-        font_size = int(scale * 30)  # Equivalencia cv2 scale a px
+        # Tamaño base relativo a la pantalla + vibración por la música (kick)
+        base_size = h // 8
+        kick_bump = int((h // 15) * kick)
+        font_size = base_size + kick_bump
+        
         try:
             font = ImageFont.truetype("arial.ttf", font_size)
         except IOError:
@@ -463,8 +467,8 @@ class LyricsEngine:
         x = (w - text_w) // 2
         y = (h - text_h) // 2 
         
-        # Borde negro (Outline)
-        outline_thickness = max(2, int(scale * 3))
+        # Borde negro (Outline) dinámico
+        outline_thickness = max(2, font_size // 12)
         for ox, oy in [(-1,-1), (-1,1), (1,-1), (1,1), (-2,0), (2,0), (0,-2), (0,2)]:
             draw.text((x + ox*outline_thickness, y + oy*outline_thickness), word, font=font, fill=(0, 0, 0))
         
