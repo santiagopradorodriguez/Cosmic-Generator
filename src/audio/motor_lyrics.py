@@ -35,7 +35,12 @@ def transcribir_audio_para_edicion(audio_path):
             print("Instalando stable-ts automáticamente en este entorno...")
             import subprocess
             import sys
+            import importlib
+            import site
             subprocess.check_call([sys.executable, "-m", "pip", "install", "stable-ts"])
+            # Limpiar caché de Python para que detecte la nueva instalación
+            importlib.invalidate_caches()
+            if hasattr(site, 'main'): site.main()
             import stable_whisper
             
         # --- PARCHE FFMPEG (Seguridad) ---
@@ -144,7 +149,11 @@ class LyricsEngine:
                 print("Instalando stable-ts automáticamente...")
                 import subprocess
                 import sys
+                import importlib
+                import site
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "stable-ts"])
+                importlib.invalidate_caches()
+                if hasattr(site, 'main'): site.main()
                 import stable_whisper
         except Exception as e:
             print(f"❌ Error Crítico: No se pudo cargar o instalar 'stable-ts': {e}")
