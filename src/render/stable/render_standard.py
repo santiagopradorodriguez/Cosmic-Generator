@@ -483,21 +483,29 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             # ============================
             # COMPOSICIÓN (Blending)
             # ============================
-            # Mezcla Alpha Correcta (Evita que el fondo negro de Matplotlib tape la física)
             # Normalizar alpha a 0.0 - 1.0
             alpha_3c = cv2.merge([alpha_mask, alpha_mask, alpha_mask]).astype(np.float32) / 255.0
             
-            # Fórmula: Final = Overlay * Alpha + Fondo * (1 - Alpha)
+            # FIX BLENDING: cv2.addWeighted puro no recorta la luz ni ahoga la física.
             fg = overlay_layer.astype(np.float32)
             bg = bg_layer.astype(np.float32)
-            frame_final = (fg * alpha_3c + bg * (1.0 - alpha_3c)).astype(np.uint8)
-           
+            # Aplicar overlay mediante máxima luminosidad para evitar oscurecer
+            frame_final = np.maximum(fg * alpha_3c, bg).astype(np.uint8)
+
+            # --- POST-PROCESADO (FASE 12: Melting World & Fractales) ---
+            # Aplicar distorsión lente ojo de pez con subgraves
+            frame_final = fx.melting_world_fisheye(frame_final, kick)
+            
+            # Aplicar ruido fractal interferencial (muy tenue)
+            t = i / fps
+            frame_final = fx.mandelbrot_overlay(frame_final, t, intensity=0.3 * harm)
+            
             # ============================
-            # POST-PROCESADO (FX)
+            # POST-PROCESADO (FX CLÁSICOS)
             # ============================
             # 1. Feedback 1.005 + (kick * 0.03) 
             zoom_factor = 1.005 + (kick * 0.03)
-            # Reducimos el decay base de 0.88 a 0.82 para que la luz se disipe más rápido
+            # Reducimos el decay base para que la luz se disipe
             frame_final = fx.feedback_zoom(frame_final, decay=0.78 + (harm * 0.08), zoom=zoom_factor)
            
             # 2. Cámara Virtual (Movimiento)

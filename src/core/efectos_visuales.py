@@ -62,14 +62,7 @@ class MotorFX:
             con la imagen original. Valores más altos (ej. 1.5, 2.0) saturan la luz intensamente.
             Si intensity <= 0, se devuelve la imagen original sin procesar.
         threshold : int, opcional
-            Umbral de luminosidad (0 a 255) para aislar las zonas brillantes. Solo los píxeles
-            cuya luminancia en escala de grises supere este valor generarán bloom. Valor por defecto: 200.
-
-        Retorna:
-        --------
-        numpy.ndarray
-            La imagen resultante con el efecto aditivo aplicado, manteniendo las mismas dimensiones
-            y tipo de dato que `img`.
+            Umbral de luminosidad (0 a 255).
         """
         if intensity <= 0: return img
         
@@ -81,21 +74,17 @@ class MotorFX:
         # 2. Multi-Layer Glow (Pirámide de baja resolución)
         h, w = bright.shape[:2]
         
-        # Capa 1: 1/2 resolución - Blur central
         w1, h1 = max(w // 2, 1), max(h // 2, 1)
         l1 = cv2.resize(bright, (w1, h1), interpolation=cv2.INTER_LINEAR)
         b1 = cv2.GaussianBlur(l1, (5, 5), 0)
         
-        # Capa 2: 1/4 resolución - Resplandor medio
         w2, h2 = max(w1 // 2, 1), max(h1 // 2, 1)
         l2 = cv2.resize(b1, (w2, h2), interpolation=cv2.INTER_LINEAR)
         b2 = cv2.GaussianBlur(l2, (11, 11), 0)
         
-        # Capa 3: 1/8 resolución - Resplandor amplio (halo masivo, costo mínimo)
         w3, h3 = max(w2 // 2, 1), max(h2 // 2, 1)
         l3 = cv2.resize(b2, (w3, h3), interpolation=cv2.INTER_LINEAR)
         b3 = cv2.GaussianBlur(l3, (21, 21), 0)
-        
         # 3. Sumar capas y recomponer (Upsampling de vuelta)
         up3 = cv2.resize(b3, (w2, h2), interpolation=cv2.INTER_LINEAR)
         mix2 = cv2.add(b2, up3)
@@ -107,6 +96,67 @@ class MotorFX:
         
         # 4. Mezcla aditiva con el frame original
         return cv2.addWeighted(img, 1.0, final_glow, intensity, 0)
+
+    def melting_world_fisheye(self, frame, kick_intensity):
+        """
+        Fase 12: Shader 'Melting World'. Distorsiona el cuadro simulando
+        un lente ojo de pez que se infla y desinfla con los subgraves (kick).
+        """
+        if kick_intensity < 0.1:
+            return frame
+            
+        h, w = frame.shape[:2]
+        
+        # Parámetros de distorsión
+        # k1 negativo = fisheye barrel distortion (se abomba hacia afuera)
+        k1 = -0.5 * kick_intensity
+        
+        # Matriz intrínseca de cámara falsa
+        f = min(w, h)
+        cx, cy = w / 2, h / 2
+        K = np.array([
+            [f, 0, cx],
+            [0, f, cy],
+            [0, 0,  1]
+        ], dtype=np.float32)
+        
+        D = np.array([k1, 0.0, 0.0, 0.0], dtype=np.float32)
+        
+        # Calcular mapa de distorsión
+        map1, map2 = cv2.initUndistortRectifyMap(K, D, None, K, (w, h), cv2.CV_32FC1)
+        
+        # Aplicar deformación con interpolación lineal
+        frame_distorted = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        return frame_distorted
+        
+    def mandelbrot_overlay(self, frame, time_sec, intensity):
+        """
+        Fase 12: Inyecta un patrón fractal de interferencia usando
+        una simplificación matemática rápida compatible con OpenCV.
+        (Efecto de ruido estático geométrico).
+        """
+        if intensity < 0.2:
+            return frame
+            
+        h, w = frame.shape[:2]
+        # Generar ruido fractal básico
+        noise = np.zeros((h, w), dtype=np.uint8)
+        cv2.randn(noise, 128, 50)
+        
+        # Suavizado para simular las manchas fractales gruesas
+        noise = cv2.GaussianBlur(noise, (15, 15), 0)
+        
+        # Umbralizar basado en el tiempo para crear patrones pulsantes
+        threshold_val = 128 + int(np.sin(time_sec * 5.0) * 50)
+        _, fractal_mask = cv2.threshold(noise, threshold_val, 255, cv2.THRESH_BINARY)
+        
+        # Colorear la máscara de un púrpura/magenta tóxico
+        fractal_layer = np.zeros_like(frame)
+        fractal_layer[fractal_mask == 255] = [200, 50, 200]
+        
+        # Mezclar con la imagen original
+        alpha = intensity * 0.4
+        return cv2.addWeighted(frame, 1.0 - alpha, fractal_layer, alpha, 0)
 
     def aberracion_cromatica(self, img, strength):
         """

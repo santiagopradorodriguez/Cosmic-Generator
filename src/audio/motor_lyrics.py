@@ -29,8 +29,15 @@ def transcribir_audio_para_edicion(audio_path):
     Devuelve el texto puro para que el usuario lo edite en la UI.
     """
     try:
-        import stable_whisper
-        
+        try:
+            import stable_whisper
+        except ImportError:
+            print("Instalando stable-ts automáticamente en este entorno...")
+            import subprocess
+            import sys
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "stable-ts"])
+            import stable_whisper
+            
         # --- PARCHE FFMPEG (Seguridad) ---
         ffmpeg_dir = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
         if ffmpeg_dir not in os.environ["PATH"]:
@@ -131,10 +138,16 @@ class LyricsEngine:
         print(f"   Audio: {self.audio_path}")
         
         try:
-            import stable_whisper
-        except ImportError:
-            print("❌ Error Crítico: La librería 'stable-ts' no está instalada.")
-            print("   Por favor ejecuta: pip install stable-ts")
+            try:
+                import stable_whisper
+            except ImportError:
+                print("Instalando stable-ts automáticamente...")
+                import subprocess
+                import sys
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "stable-ts"])
+                import stable_whisper
+        except Exception as e:
+            print(f"❌ Error Crítico: No se pudo cargar o instalar 'stable-ts': {e}")
             return
 
         # --- PARCHE FFMPEG (Seguridad) ---
@@ -417,24 +430,33 @@ class LyricsEngine:
         h, w = frame.shape[:2]
         
         # Configuración dinámica de fuente (Letras MASIVAS para el VJ)
-        font = cv2.FONT_HERSHEY_SIMPLEX
+        # PIL ImageDraw soporta tildes y caracteres especiales (UTF-8)
+        img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        draw = ImageDraw.Draw(img_pil)
         
-        # PULSO PSICODÉLICO: La escala aumenta hasta un 40% adicional con el golpe del bombo
-        escala_base = min(w, h) / 100.0
-        scale = escala_base * (1.0 + kick * 0.4) 
-        
-        thickness = max(2, int(scale * 3))
-        
-        text_size, _ = cv2.getTextSize(word, font, scale, thickness)
-        text_w, text_h = text_size
+        font_size = int(scale * 30)  # Equivalencia cv2 scale a px
+        try:
+            font = ImageFont.truetype("arial.ttf", font_size)
+        except IOError:
+            font = ImageFont.load_default()
+            
+        try:
+            left, top, right, bottom = draw.textbbox((0, 0), word, font=font)
+            text_w, text_h = right - left, bottom - top
+        except AttributeError:
+            text_w, text_h = draw.textsize(word, font=font)
         
         # Centrado perfecto en la pantalla para fusionarse con el núcleo
         x = (w - text_w) // 2
-        y = (h + text_h) // 2 
+        y = (h - text_h) // 2 
         
-        # Borde negro (Outline) para legibilidad
-        cv2.putText(frame, word, (x, y), font, scale, (0, 0, 0), thickness * 3, cv2.LINE_AA)
+        # Borde negro (Outline)
+        outline_thickness = max(2, int(scale * 3))
+        for ox, oy in [(-1,-1), (-1,1), (1,-1), (1,1), (-2,0), (2,0), (0,-2), (0,2)]:
+            draw.text((x + ox*outline_thickness, y + oy*outline_thickness), word, font=font, fill=(0, 0, 0))
+        
         # Texto blanco
-        cv2.putText(frame, word, (x, y), font, scale, (255, 255, 255), thickness, cv2.LINE_AA)
+        draw.text((x, y), word, font=font, fill=(255, 255, 255))
         
+        frame = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
         return frame

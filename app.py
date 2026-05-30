@@ -13,6 +13,20 @@ from render.stable.render_standard import generar_animacion_god_mode
 from core.video_utils import unir_video_con_musica
 from audio.motor_lyrics import transcribir_audio_para_edicion
 
+class StreamlitLogRedirector:
+    """Redirige stdout y stderr a un elemento de Streamlit en tiempo real."""
+    def __init__(self, st_empty_element):
+        self.st_empty_element = st_empty_element
+        self.text = ""
+        self.terminal = sys.stdout
+    def write(self, msg):
+        self.text += msg
+        self.terminal.write(msg)
+        # Mostrar las últimas 2500 letras para no saturar Streamlit
+        self.st_empty_element.code(self.text[-2500:], language='bash')
+    def flush(self):
+        self.terminal.flush()
+
 # Configuración de la página (DEBE ser la primera llamada a st)
 st.set_page_config(
     page_title="Cosmic Generator V2.0",
@@ -128,7 +142,17 @@ elif menu == "🎛️ Generador":
             final_video = os.path.join("RENDERS", f"FINAL_{audio_file.name}.mp4")
             os.makedirs("RENDERS", exist_ok=True)
             
+            st.markdown("### 🖥️ Consola de Desarrollo (Logs)")
+            log_box = st.empty()
+            
             with st.spinner("Ejecutando simulación física (esto puede tomar tiempo)..."):
+                # Activar redirección
+                redirector = StreamlitLogRedirector(log_box)
+                old_stdout = sys.stdout
+                old_stderr = sys.stderr
+                sys.stdout = redirector
+                sys.stderr = redirector
+                
                 try:
                     def update_progress(current, total):
                         progress_bar.progress(int((current / total) * 100))
@@ -159,6 +183,10 @@ elif menu == "🎛️ Generador":
                         st.error("Error durante el renderizado físico.")
                 except Exception as e:
                     st.error(f"Excepción crítica: {str(e)}")
+                finally:
+                    # Desactivar redirección pase lo que pase
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
 
         if use_lyrics:
             st.warning("Has activado las letras. Primero debemos extraerlas y corregirlas.")
