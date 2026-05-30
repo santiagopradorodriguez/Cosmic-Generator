@@ -37,19 +37,30 @@ class StreamlitLogRedirector:
         self.text = ""
         self.terminal = sys.stdout
         self.last_update = 0
-    def write(self, msg):
-        self.text += msg
-        self.terminal.write(msg)
+        self._is_writing = False
         
-        # Ignorar actualización visual si el log viene de un hilo secundario sin contexto (Numba, Audio)
-        if get_script_run_ctx() is None:
+    def write(self, msg):
+        if self._is_writing:
+            self.terminal.write(msg)
             return
             
-        now = time.time()
-        # Actualizar UI como máximo 2 veces por segundo (cada 0.5s)
-        if now - self.last_update > 0.5:
-            self.st_empty_element.code(self.text[-2500:], language='bash')
-            self.last_update = now
+        self._is_writing = True
+        try:
+            self.text += msg
+            self.terminal.write(msg)
+            
+            # Ignorar actualización visual si el log viene de un hilo secundario sin contexto (Numba, Audio)
+            if get_script_run_ctx() is None:
+                return
+                
+            now = time.time()
+            # Actualizar UI como máximo 2 veces por segundo (cada 0.5s)
+            if now - self.last_update > 0.5:
+                self.st_empty_element.code(self.text[-2500:], language='bash')
+                self.last_update = now
+        finally:
+            self._is_writing = False
+            
     def flush(self):
         self.terminal.flush()
 
