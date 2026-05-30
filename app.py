@@ -190,6 +190,12 @@ elif menu == "🎛️ Generador":
 
         if use_lyrics:
             st.warning("Has activado las letras. Primero debemos extraerlas y corregirlas.")
+            whisper_model = st.selectbox(
+                "Potencia de Transcripción (Modelo de Inteligencia Artificial)",
+                ["tiny", "base", "small", "medium", "large"],
+                index=3, # medium por defecto
+                help="Los modelos más grandes (medium/large) son mucho más precisos con la ortografía y el tiempo, pero requieren más potencia y tiempo de cálculo."
+            )
             if st.button("📝 Paso 1: Extraer Letra"):
                 # Guardar el archivo subido temporalmente para Whisper
                 os.makedirs("temp", exist_ok=True)
@@ -214,7 +220,7 @@ elif menu == "🎛️ Generador":
                     
                     res_container = []
                     def run_extraction():
-                        res_container.append(transcribir_audio_para_edicion(temp_audio_path))
+                        res_container.append(transcribir_audio_para_edicion(temp_audio_path, model_size=whisper_model))
                     
                     t = threading.Thread(target=run_extraction)
                     t.start()

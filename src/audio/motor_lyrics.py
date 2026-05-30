@@ -23,8 +23,9 @@ def corregir_ortografia_whisper(texto):
     texto = re.sub(r' +', ' ', texto)
     return texto.strip()
 
-def transcribir_audio_para_edicion(audio_path):
+def transcribir_audio_para_edicion(audio_path, model_size="medium"):
     """
+    Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
     Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
     Devuelve el texto puro para que el usuario lo edite en la UI.
     """
@@ -50,7 +51,7 @@ def transcribir_audio_para_edicion(audio_path):
             
         device = "cuda" if torch.cuda.is_available() else "cpu"
         audio_array, _ = librosa.load(audio_path, sr=16000, mono=True)
-        model = stable_whisper.load_model('medium', device=device)
+        model = stable_whisper.load_model(model_size, device=device)
         result = model.transcribe(audio_array, language='es', vad=False)
         
         # Guardar JSON preliminar
