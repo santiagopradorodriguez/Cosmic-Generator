@@ -16,7 +16,19 @@ from audio.motor_lyrics import transcribir_audio_para_edicion
 import time
 
 import time
-from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
+
+try:
+    from streamlit.runtime.scriptrunner import get_script_run_ctx, add_script_run_ctx
+except ImportError:
+    try:
+        from streamlit.scriptrunner import get_script_run_ctx, add_script_run_ctx
+    except ImportError:
+        try:
+            from streamlit.report_thread import get_report_ctx as get_script_run_ctx
+            from streamlit.report_thread import add_report_ctx as add_script_run_ctx
+        except ImportError:
+            get_script_run_ctx = lambda: None
+            add_script_run_ctx = lambda thread: None
 
 class StreamlitLogRedirector:
     """Redirige stdout y stderr a un elemento de Streamlit en tiempo real de forma segura (Thread-Safe)."""
@@ -239,9 +251,8 @@ elif menu == "🎛️ Generador":
                     t = threading.Thread(target=run_extraction)
                     # Añadir contexto de Streamlit al hilo para evitar "missing ScriptRunContext"
                     try:
-                        from streamlit.runtime.scriptrunner import add_script_run_ctx
                         add_script_run_ctx(t)
-                    except ImportError:
+                    except Exception:
                         pass
                     t.start()
                     
