@@ -14,9 +14,9 @@ import sys
 from scipy.ndimage import gaussian_filter1d
 
 # Importar nuestros módulos existentes
-from efectos_visuales import CamaraVirtual, MotorFX
-from motor_lyrics import LyricsEngine
-from nucleo_visual import (
+from core.efectos_visuales import CamaraVirtual, MotorFX
+from audio.motor_lyrics import LyricsEngine
+from core.nucleo_visual import (
     simulacion_gray_scott,
     simulacion_ks,
     simulacion_ondas,

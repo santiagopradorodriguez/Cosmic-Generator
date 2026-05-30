@@ -1,3 +1,6 @@
+"""
+(C) Rebeldía Cósmica | Creado por Santiago Prado
+"""
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -5,17 +8,18 @@ import matplotlib.pyplot as plt
 import cv2
 import imageio_ffmpeg
 from tqdm import tqdm
-import os
 import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))) # Añadir src al path
 
 # Importar nuestros módulos
-from efectos_visuales import CamaraVirtual, MotorFX
-from config import WIDTH, HEIGHT, FPS, ACTOS, NOTE_PALETTE
-from audio_analyzer import analizar_audio
-from video_utils import unir_video_con_musica
-from visual_entities import EspirituProcedural, SuperformaProcedural, LorenzSwarm, GeneradorHojas
+from core.efectos_visuales import CamaraVirtual, MotorFX
+from core.config import WIDTH, HEIGHT, FPS, ACTOS, NOTE_PALETTE
+from audio.audio_analyzer import analizar_audio
+from core.video_utils import unir_video_con_musica
+from core.visual_entities import EspirituProcedural, SuperformaProcedural, LorenzSwarm, GeneradorHojas
 
-from nucleo_visual import (
+from core.nucleo_visual import (
     simulacion_gray_scott,
     simulacion_ks,
     simulacion_gpe,
@@ -28,7 +32,48 @@ from nucleo_visual import (
 # Configuración FFmpeg
 plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
 
-def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=None, seed=None, allowed_engines=None, use_spirits=True, use_kaleido=True, use_flash=True, use_chroma=False, global_cmap=None):
+def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=None, seed=None, allowed_engines=None, use_spirits=True, use_kaleido=True, use_flash=True, use_chroma=False, use_lyrics=False, global_cmap=None, progress_callback=None):
+    """
+    Función principal encargada de renderizar la animación visual reactiva al audio utilizando múltiples motores físicos.
+
+    Esta función orquesta la simulación y composición de diversas capas visuales, integrando
+    análisis de audio con sistemas dinámicos (Gray-Scott, Kuramoto-Sivashinsky, GPE, etc.), 
+    efectos de post-procesamiento y geometría generativa.
+
+    Parámetros:
+    -----------
+    ruta_audio : str
+        Ruta absoluta o relativa al archivo de audio que se utilizará como fuente de reactividad.
+    nombre_salida_temp : str
+        Nombre o ruta del archivo de video temporal (sin audio) donde se guardarán los fotogramas generados (ej. 'temp.mp4').
+    fps : int, opcional
+        Fotogramas por segundo del video de salida. Valor por defecto: 30.
+    duracion : float, opcional
+        Duración máxima del render en segundos. Si es None, se renderiza la totalidad del audio. Valor por defecto: None.
+    seed : int, opcional
+        Semilla para el generador de números aleatorios (numpy.random) para garantizar reproducibilidad. Valor por defecto: None.
+    allowed_engines : list de str, opcional
+        Lista de identificadores de los motores físicos o de efectos permitidos para esta sesión (ej. ['GS', 'KS', 'lorenz']). Si es None, se usan todos.
+    use_spirits : bool, opcional
+        Activa o desactiva la capa de entidades visuales procedimentales (Espíritus/Metaballs). Valor por defecto: True.
+    use_kaleido : bool, opcional
+        Habilita el efecto de caleidoscopio dinámico (geometría de mandala). Valor por defecto: True.
+    use_flash : bool, opcional
+        Controla si se permiten flashes intensos en la animación mediante uso masivo de bloom y saturación, útil desactivar por fotosensibilidad. Valor por defecto: True.
+    use_chroma : bool, opcional
+        Activa la cromestesia: teñir o influenciar los colores del fondo usando una paleta asignada a la nota predominante. Valor por defecto: False.
+    use_lyrics : bool, opcional
+        Determina si se superpondrán letras sincronizadas sobre el video, extraídas vía Stable-TS u otro motor. Valor por defecto: False.
+    global_cmap : str, opcional
+        Nombre de un colormap de matplotlib (ej. 'viridis', 'magma') que forzará una paleta global, ignorando las de la escena. Valor por defecto: None.
+    progress_callback : callable, opcional
+        Función de retroalimentación invocada en cada fotograma. Su firma debe ser `progress_callback(frame_actual, total_frames)`. Valor por defecto: None.
+
+    Retorna:
+    --------
+    bool
+        Devuelve True si la generación y escritura del video se completó con éxito. False si hubo algún error crítico o falla en el análisis.
+    """
     # 1. Análisis de Audio
     audio_data = analizar_audio(ruta_audio, fps, duracion)
     if not audio_data:
@@ -39,6 +84,16 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
     if seed is not None:
         print(f"🌱 Usando Seed: {seed}")
         np.random.seed(seed)
+
+    # 1.5 Motor de Letras (Lyrics)
+    lyrics_engine = None
+    if use_lyrics:
+        try:
+            from audio.motor_lyrics import LyricsEngine
+            print("🎤 Inicializando Motor de Lyrics (Stable-TS)...")
+            lyrics_engine = LyricsEngine(ruta_audio)
+        except Exception as e:
+            print(f"⚠️ Error cargando LyricsEngine: {e}")
 
     print(f"--- 2. Inicializando Motor de Física (Numba Accelerated) ---")
 
@@ -98,26 +153,12 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
     kdv_u = np.zeros((gs_h, gs_w), dtype=np.float32)
     kdv_u_next = np.zeros_like(kdv_u)
 
-    # --- SISTEMA GEOMETRÍA (LORENZ) ---
-    # Usamos esto SOLO para líneas vectoriales precisas (Lorenz, Cubos)
-    dpi = 100
-    fig, ax = plt.subplots(figsize=(WIDTH/dpi, HEIGHT/dpi), dpi=dpi)
-    ax.set_axis_off()
-    ax.set_xlim(-4 * aspect_ratio, 4 * aspect_ratio)
-    ax.set_ylim(-4, 4)
-    fig.subplots_adjust(0,0,1,1)
-    # Fondo transparente para superponer
-    fig.patch.set_alpha(0.0)
-    fig.set_facecolor('none')
-    ax.patch.set_alpha(0.0) # Asegurar que el fondo de los ejes también sea transparente
-    ax.set_facecolor('none')
-   
-    # --- INICIALIZAR NUEVOS ELEMENTOS ---
-    lorenz_swarm = LorenzSwarm(ax, num_attractors=3) # MOD: Max 3
-    gen_hojas = GeneradorHojas(ax)
+    # --- INICIALIZAR NUEVOS ELEMENTOS (OPENCV PURO) ---
+    lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=3) # MOD: Max 3
+    gen_hojas = GeneradorHojas(WIDTH, HEIGHT)
     
     # --- INICIALIZAR GEOMETRÍA SAGRADA ---
-    superforma = SuperformaProcedural(ax)
+    superforma = SuperformaProcedural(WIDTH, HEIGHT)
     
     # --- INICIALIZAR ESPÍRITUS ---
     # Creamos 7 entidades con semillas aleatorias para que sean distintas
@@ -125,7 +166,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
     num_espiritus = 0
     if use_spirits:
         num_espiritus = 7
-        espiritus = [EspirituProcedural(ax, seed_val=i*100) for i in range(num_espiritus)]
+        espiritus = [EspirituProcedural(WIDTH, HEIGHT, seed_val=i*100) for i in range(num_espiritus)]
         # Posiciones distribuidas
         pos_espiritus = np.linspace(-5.0, 5.0, num_espiritus)
     
@@ -160,6 +201,8 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
                 local_actos = ACTOS
 
         for i in tqdm(range(total_frames), desc="Renderizando Física + Geometría"):
+            if progress_callback:
+                progress_callback(i, total_frames)
 
             # --- DATOS DE AUDIO ---
             kick = audio_data['rms_perc'][i] if i < len(audio_data['rms_perc']) else 0
@@ -184,9 +227,9 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             # MOD: Aleatoriedad al cambiar de escena
             if idx_acto != prev_idx_acto:
                 prev_idx_acto = idx_acto
-                # Solo activar Lorenz si está permitido y el azar lo dice
-                use_lorenz = ('LORENZ' in allowed_engines) if allowed_engines else True
-                use_geometry = ('GEOMETRY' in allowed_engines) if allowed_engines else True
+                # Solo activar Lorenz/IFS si están permitidos
+                use_lorenz = ('lorenz' in allowed_engines) if allowed_engines else True
+                use_geometry = ('ifs' in allowed_engines) if allowed_engines else True
                 scene_flags['lorenz'] = (np.random.rand() < 0.3) and use_lorenz
                 scene_flags['leaves'] = np.random.rand() < 0.3
                 scene_flags['superforma'] = (np.random.rand() < 0.4) and use_geometry
@@ -270,6 +313,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
                 # HOMEOSTASIS WAVE
                 if np.max(np.abs(wave_u)) > 50.0:
                     wave_u *= 0.5
+                    wave_u_prev *= 0.5 # CORRECCIÓN FÍSICO: Escalar prev también para evitar choque no físico
                 
                 # FIX: Añadido argumento faltante (seed_mask=None)
                 simulacion_ondas(wave_u, wave_u_prev, wave_u_next, damping, c2, None)
@@ -280,7 +324,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
                 img_norm = np.clip(img_norm, 0, 1) # Asegurar rango
                 
             elif escena['engine'] == 'CH':
-                # Cahn-Hilliard
+                # Allen-Cahn (Nombrado Cahn-Hilliard originalmente, pero es Allen-Cahn por no conservar masa localmente)
                 gamma = escena['p1'] * 0.01
                 mobility = escena['p2'] * (1 + kick)
                 for _ in range(5):
@@ -358,9 +402,9 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             cmap = plt.get_cmap(cmap_name)
             
             # CORRECCIÓN GAMMA (CONTRASTE):
-            # MOD: Elevamos a 5.0 para enfatizar el negro (antes 3.0)
+            # FIX: Restauramos gamma a 1.2 para no aplastar la simulación a negro
             img_norm = np.clip(img_norm, 0.0, 1.0)
-            img_norm = np.power(img_norm, 5.0) 
+            img_norm = np.power(img_norm, 1.2) 
             
             bg_layer = (cmap(img_norm)[:, :, :3] * 255).astype(np.uint8)
             
@@ -396,65 +440,52 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             bg_layer[edges > 0] = [0, 0, 0] # Pintar bordes de negro puro
            
             # Oscurecer el fondo si la música es baja
-            # MOD: Fondo más oscuro por defecto (0.05 en vez de 0.3)
-            bg_layer = (bg_layer * (0.05 + harm * 0.9)).astype(np.uint8)
+            # FIX: Establecer piso mínimo (0.4) para que la física no desaparezca
+            bg_layer = (bg_layer * (0.4 + harm * 0.6)).astype(np.uint8)
 
-            # --- UPDATE GEOMETRÍA Y OBJETOS ---
+            # --- UPDATE GEOMETRÍA Y OBJETOS (OPENCV NEON) ---
+            overlay_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
             
             # 1. Lorenz Swarm (Sigue a los platillos)
             dt_lorenz = 0.005
-            # MOD: Visibilidad aleatoria
-            lorenz_swarm.update(dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'])
+            lorenz_swarm.update(overlay_layer, dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'])
             
-            # 2. Generador de Hojas (Crece con la armonía, nace con el kick)
+            # 2. Generador de Hojas
             if scene_flags['leaves']:
                 if kick > 0.7 and np.random.rand() < 0.3:
-                    # Nacer en posición aleatoria
                     hx = np.random.uniform(-3, 3)
                     hy = np.random.uniform(-2, 2)
-                    # Color de la nota actual
                     color_hoja = (target_color_bgr[2]/255, target_color_bgr[1]/255, target_color_bgr[0]/255)
                     gen_hojas.spawn(hx, hy, color_hoja)
             
-            gen_hojas.update(kick, harm)
+            gen_hojas.update(overlay_layer, kick, harm)
             
-            # --- UPDATE ESPÍRITUS ---
-            # MOD: Multiplicación lenta (Empiezan siendo 1)
-            num_active_spirits = int(1 + (num_espiritus - 1) * (progreso ** 1.5))
-            
-            # Usamos el color de la nota musical (convertido a 0-1 para Matplotlib)
+            # 3. Superforma (Arte Matemático)
             color_mpl = (target_color_bgr[2]/255.0, target_color_bgr[1]/255.0, target_color_bgr[0]/255.0)
-            
-            # Actualizar Superforma (Arte Matemático) - Aleatorio
             if scene_flags['superforma']:
-                superforma.update(i*0.02, kick, harm, color_mpl)
-            else:
-                superforma.line.set_data([], [])
+                superforma.update(overlay_layer, i*0.02, kick, harm, color_mpl)
             
+            # 4. Espíritus (Metaballs/Trails)
+            num_active_spirits = int(1 + (num_espiritus - 1) * (progreso ** 1.5))
             for idx, esp in enumerate(espiritus):
                 if idx < num_active_spirits:
-                    # Desfase temporal para que cada uno baile distinto
                     t_esp = i * 0.05 + (idx * 13.0) 
-                    # Aparecen y bailan en la capa de geometría
-                    esp.update(pos_espiritus[idx], -0.5, 0.8, t_esp, kick, harm, color_mpl)
-                else:
-                    esp.update(0, 0, 0, 0, 0, 0, color_mpl) # Ocultar
-           
-            # Renderizar Matplotlib a buffer transparente
-            fig.canvas.draw()
-            buf = np.asarray(fig.canvas.buffer_rgba())
-           
-            # Convertir a formato OpenCV
-            overlay_layer = cv2.cvtColor(buf, cv2.COLOR_RGBA2BGR)
-            overlay_mask = buf[:, :, 3] # Canal Alpha
+                    esp.update(overlay_layer, pos_espiritus[idx], -0.5, 0.8, t_esp, kick, harm, color_mpl)
+            
+            # Aplicar suave resplandor (Neon Glow) al overlay
+            overlay_layer = cv2.GaussianBlur(overlay_layer, (3, 3), 0)
+            
+            # Crear máscara Alpha realista basada en la luminosidad del overlay
+            overlay_gray = cv2.cvtColor(overlay_layer, cv2.COLOR_BGR2GRAY)
+            _, alpha_mask = cv2.threshold(overlay_gray, 5, 255, cv2.THRESH_BINARY)
+            alpha_mask = cv2.GaussianBlur(alpha_mask, (7, 7), 0) # Suavizar bordes
            
             # ============================
             # COMPOSICIÓN (Blending)
             # ============================
             # Mezcla Alpha Correcta (Evita que el fondo negro de Matplotlib tape la física)
             # Normalizar alpha a 0.0 - 1.0
-            alpha = buf[:, :, 3].astype(np.float32) / 255.0
-            alpha_3c = cv2.merge([alpha, alpha, alpha])
+            alpha_3c = cv2.merge([alpha_mask, alpha_mask, alpha_mask]).astype(np.float32) / 255.0
             
             # Fórmula: Final = Overlay * Alpha + Fondo * (1 - Alpha)
             fg = overlay_layer.astype(np.float32)
@@ -479,20 +510,34 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
                 
             frame_final = camara.aplicar(frame_final)
            
-            # 3. Bloom (Brillo en los picos altos)
-            if kick > 0.5 and use_flash:
-                # Reducimos la intensidad del bloom a la mitad para evitar el "quemado" blanco
-                frame_final = fx.aplicar_bloom(frame_final, intensity=kick * 0.3, threshold=230)
-               
-            # 4. Aberración Cromática (Glitch basado en textura/ruido de la canción)
+            # --- 2.5 LYRICS OVERLAY (TEXTO NEÓN DIRECTO EN SIMULACIÓN) ---
+            if lyrics_engine:
+                tiempo_actual = i / float(fps)
+                frame_final = lyrics_engine.draw(frame_final, tiempo_actual, kick=kick)
+           
+            # 3. Bloom (Resplandor MASIVO analógico)
             if use_flash:
-                frame_final = fx.aberracion_cromatica(frame_final, strength=kick * 5 + textura * 10)
+                # Intensidad base alta, explota con el kick, umbral bajo para que brille casi todo lo blanco
+                frame_final = fx.aplicar_bloom(frame_final, intensity=0.5 + (kick * 1.5), threshold=160)
+               
+            # 4. Aberración Cromática (Glitch VHS constante basado en textura/ruido)
+            if use_flash:
+                # La aberración siempre tiene un mínimo (VHS tracking error)
+                frame_final = fx.aberracion_cromatica(frame_final, strength=5.0 + kick * 15 + textura * 15)
+            
+            # 5. Modelo Freemium (Marca de Agua)
+            # Solo desaparece si el usuario compró la versión Pro
+            # En el futuro esto vendrá de un argumento de la interfaz
+            es_freemium = True
+            if es_freemium:
+                # Marca elegante y traslúcida en la esquina inferior derecha
+                wm_text = "Generated by Cosmic Generator V2"
+                cv2.putText(frame_final, wm_text, (WIDTH - 500, HEIGHT - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (150, 150, 150), 2, cv2.LINE_AA)
             
             # Escribir frame
             out.write(frame_final)
 
         out.release()
-        plt.close(fig)
         return True
 
     except Exception as e:
@@ -517,6 +562,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-kaleido", action="store_true", help="Desactivar caleidoscopio")
     parser.add_argument("--no-flash", action="store_true", help="Modo seguro (sin flashes fuertes)")
     parser.add_argument("--chroma", action="store_true", help="Activar color por nota")
+    parser.add_argument("--lyrics", action="store_true", help="Activar Motor de Letras")
     parser.add_argument("--cmap", type=str, help="Mapa de color global")
     parser.add_argument("--output", type=str, help="Ruta de salida")
     
@@ -531,5 +577,5 @@ if __name__ == "__main__":
     else:
         DURACION_TEST = 20 if args.test else None
    
-    if generar_animacion_god_mode(CANCION, TEMP, fps=30, duracion=DURACION_TEST, seed=args.seed, allowed_engines=args.engines, use_spirits=not args.no_spirits, use_kaleido=not args.no_kaleido, use_flash=not args.no_flash, use_chroma=args.chroma, global_cmap=args.cmap):
+    if generar_animacion_god_mode(CANCION, TEMP, fps=30, duracion=DURACION_TEST, seed=args.seed, allowed_engines=args.engines, use_spirits=not args.no_spirits, use_kaleido=not args.no_kaleido, use_flash=not args.no_flash, use_chroma=args.chroma, use_lyrics=args.lyrics, global_cmap=args.cmap):
         unir_video_con_musica(TEMP, CANCION, FINAL, duracion=DURACION_TEST)

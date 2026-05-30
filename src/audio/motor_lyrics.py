@@ -7,6 +7,53 @@ import torch
 import librosa
 import imageio_ffmpeg
 import subprocess
+import re
+
+def corregir_ortografia_whisper(texto):
+    """
+    (C) Rebeldía Cósmica
+    Limpia los artefactos y alucinaciones comunes de Whisper en español.
+    """
+    # Fallos comunes de caracteres raros
+    texto = texto.replace("s??", "sé")
+    texto = texto.replace("q??", "qué")
+    texto = texto.replace("a??", "ahí")
+    # Limpiar exceso de signos de interrogación aislados
+    texto = re.sub(r'\?+', '?', texto)
+    texto = re.sub(r' +', ' ', texto)
+    return texto.strip()
+
+def transcribir_audio_para_edicion(audio_path):
+    """
+    Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
+    Devuelve el texto puro para que el usuario lo edite en la UI.
+    """
+    try:
+        import stable_whisper
+        
+        # --- PARCHE FFMPEG (Seguridad) ---
+        ffmpeg_dir = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+        if ffmpeg_dir not in os.environ["PATH"]:
+            os.environ["PATH"] += os.pathsep + ffmpeg_dir
+            
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        audio_array, _ = librosa.load(audio_path, sr=16000, mono=True)
+        model = stable_whisper.load_model('medium', device=device)
+        result = model.transcribe(audio_array, language='es', vad=False)
+        
+        # Guardar JSON preliminar
+        json_path = os.path.splitext(audio_path)[0] + ".json"
+        result.save_as_json(json_path)
+        
+        # Extraer texto y corregir ortografía
+        texto_crudo = result.text if hasattr(result, 'text') else ""
+        texto_limpio = corregir_ortografia_whisper(texto_crudo)
+        return texto_limpio
+    except Exception as e:
+        print(f"Error extrayendo letra para edición: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error al transcribir el audio. Detalles técnicos: {e}"
 
 class LyricsEngine:
     def __init__(self, audio_path):
@@ -108,7 +155,12 @@ class LyricsEngine:
 
             # CAMBIO: Usamos 'medium' en lugar de 'large-v2' para evitar que se congele en CPU
             print("   🧠 Cargando modelo Whisper 'medium' (Balance velocidad/precisión)...")
-            model = stable_whisper.load_model('medium', device=device)
+            try:
+                model = stable_whisper.load_model('medium', device=device)
+            except Exception as e:
+                print(f"❌ Error crítico en PyTorch/Whisper al cargar modelo: {e}")
+                print("⚠️ Fallback: Ejecución sin letras.")
+                return
             
             # --- ALINEACIÓN FORZADA VS TRANSCRIPCIÓN ---
             external_text = self._get_external_lyrics()
@@ -350,11 +402,12 @@ class LyricsEngine:
         
         return mask
 
-    def draw(self, frame, time):
+    def draw(self, frame, time, kick=0.0):
         """
         Dibuja la palabra actual en el frame usando OpenCV.
         :param frame: Imagen BGR (numpy array).
         :param time: Tiempo actual en segundos.
+        :param kick: Valor RMS percusivo (0 a 1) para hacer vibrar las letras.
         :return: Frame modificado.
         """
         word = self.get_current_word(time)
@@ -363,16 +416,21 @@ class LyricsEngine:
             
         h, w = frame.shape[:2]
         
-        # Configuración dinámica de fuente
+        # Configuración dinámica de fuente (Letras MASIVAS para el VJ)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        scale = min(w, h) / 800.0  # Escala relativa a la resolución
-        thickness = max(1, int(scale * 2))
+        
+        # PULSO PSICODÉLICO: La escala aumenta hasta un 40% adicional con el golpe del bombo
+        escala_base = min(w, h) / 100.0
+        scale = escala_base * (1.0 + kick * 0.4) 
+        
+        thickness = max(2, int(scale * 3))
         
         text_size, _ = cv2.getTextSize(word, font, scale, thickness)
         text_w, text_h = text_size
         
+        # Centrado perfecto en la pantalla para fusionarse con el núcleo
         x = (w - text_w) // 2
-        y = h - int(h * 0.1) # Posición: 10% desde el borde inferior
+        y = (h + text_h) // 2 
         
         # Borde negro (Outline) para legibilidad
         cv2.putText(frame, word, (x, y), font, scale, (0, 0, 0), thickness * 3, cv2.LINE_AA)

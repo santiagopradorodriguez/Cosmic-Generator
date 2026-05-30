@@ -1,3 +1,6 @@
+"""
+(C) Rebeldía Cósmica | Creado por Santiago Prado
+"""
 import cv2
 import numpy as np
 import random
@@ -43,14 +46,90 @@ class MotorFX:
         self.prev_frame = np.zeros((h, w, 3), dtype=np.float32)
         
     def aplicar_bloom(self, img, intensity, threshold=200):
+        """
+        Aplica un efecto de resplandor (Bloom / Neon Glow) multi-capa a las áreas brillantes de la imagen.
+
+        Este método aísla los píxeles que superan un umbral de luminosidad y genera un halo difuso
+        alrededor de ellos mediante una técnica piramidal (downsampling iterativo). Esto permite
+        crear un resplandor masivo de forma matemáticamente eficiente sin comprometer la tasa de fotogramas (FPS).
+
+        Parámetros:
+        -----------
+        img : numpy.ndarray
+            La imagen (fotograma) de entrada en formato BGR (tipo uint8) proveniente de OpenCV.
+        intensity : float
+            Factor de multiplicación para la capa de resplandor final al mezclarla aditivamente
+            con la imagen original. Valores más altos (ej. 1.5, 2.0) saturan la luz intensamente.
+            Si intensity <= 0, se devuelve la imagen original sin procesar.
+        threshold : int, opcional
+            Umbral de luminosidad (0 a 255) para aislar las zonas brillantes. Solo los píxeles
+            cuya luminancia en escala de grises supere este valor generarán bloom. Valor por defecto: 200.
+
+        Retorna:
+        --------
+        numpy.ndarray
+            La imagen resultante con el efecto aditivo aplicado, manteniendo las mismas dimensiones
+            y tipo de dato que `img`.
+        """
         if intensity <= 0: return img
+        
+        # 1. Extraer altas luces
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, mask = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
         bright = cv2.bitwise_and(img, img, mask=mask)
-        blur = cv2.GaussianBlur(bright, (0, 0), sigmaX=15, sigmaY=15)
-        return cv2.addWeighted(img, 1.0, blur, intensity, 0)
+        
+        # 2. Multi-Layer Glow (Pirámide de baja resolución)
+        h, w = bright.shape[:2]
+        
+        # Capa 1: 1/2 resolución - Blur central
+        w1, h1 = max(w // 2, 1), max(h // 2, 1)
+        l1 = cv2.resize(bright, (w1, h1), interpolation=cv2.INTER_LINEAR)
+        b1 = cv2.GaussianBlur(l1, (5, 5), 0)
+        
+        # Capa 2: 1/4 resolución - Resplandor medio
+        w2, h2 = max(w1 // 2, 1), max(h1 // 2, 1)
+        l2 = cv2.resize(b1, (w2, h2), interpolation=cv2.INTER_LINEAR)
+        b2 = cv2.GaussianBlur(l2, (11, 11), 0)
+        
+        # Capa 3: 1/8 resolución - Resplandor amplio (halo masivo, costo mínimo)
+        w3, h3 = max(w2 // 2, 1), max(h2 // 2, 1)
+        l3 = cv2.resize(b2, (w3, h3), interpolation=cv2.INTER_LINEAR)
+        b3 = cv2.GaussianBlur(l3, (21, 21), 0)
+        
+        # 3. Sumar capas y recomponer (Upsampling de vuelta)
+        up3 = cv2.resize(b3, (w2, h2), interpolation=cv2.INTER_LINEAR)
+        mix2 = cv2.add(b2, up3)
+        
+        up2 = cv2.resize(mix2, (w1, h1), interpolation=cv2.INTER_LINEAR)
+        mix1 = cv2.add(b1, up2)
+        
+        final_glow = cv2.resize(mix1, (w, h), interpolation=cv2.INTER_LINEAR)
+        
+        # 4. Mezcla aditiva con el frame original
+        return cv2.addWeighted(img, 1.0, final_glow, intensity, 0)
 
     def aberracion_cromatica(self, img, strength):
+        """
+        Aplica un desplazamiento de los canales de color (Aberración Cromática) simulando imperfecciones ópticas o fallos VHS.
+
+        Separa los canales B (Azul), G (Verde) y R (Rojo) de la imagen, manteniendo el Verde intacto
+        como ancla espacial. El canal Rojo se traslada horizontalmente hacia la derecha, y el Azul 
+        se traslada hacia la izquierda mediante transformaciones afines.
+
+        Parámetros:
+        -----------
+        img : numpy.ndarray
+            La imagen (fotograma) de entrada en formato BGR (tipo uint8).
+        strength : float o int
+            Magnitud del desplazamiento horizontal en píxeles. Representa la distancia que se separarán
+            los canales cromáticos. A mayor valor, mayor es el efecto "Glitch" o defecto de lente.
+            Si strength <= 0, se devuelve la imagen original sin procesar.
+
+        Retorna:
+        --------
+        numpy.ndarray
+            La imagen procesada tras recombinar los canales desplazados (R y B) con el canal G original.
+        """
         if strength <= 0: return img
         b, g, r = cv2.split(img)
         rows, cols = img.shape[:2]

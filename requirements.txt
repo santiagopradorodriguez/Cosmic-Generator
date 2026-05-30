@@ -1,0 +1,13 @@
+numpy
+matplotlib
+opencv-python
+imageio-ffmpeg
+tqdm
+requests
+SpeechRecognition
+pyaudio
+streamlit
+librosa
+fastapi
+uvicorn
+moviepy

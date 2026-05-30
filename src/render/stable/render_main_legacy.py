@@ -14,10 +14,10 @@ import argparse
 # Añadir directorio actual al path para importaciones
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
-from efectos_visuales import CamaraVirtual, MotorFX
-from config import WIDTH, HEIGHT, ACTOS, NOTE_PALETTE
-from visual_entities import TunelCuantico3D
-from nucleo_visual import (
+from core.efectos_visuales import CamaraVirtual, MotorFX
+from core.config import WIDTH, HEIGHT, ACTOS, NOTE_PALETTE
+from core.visual_entities import TunelCuantico3D
+from core.nucleo_visual import (
     simulacion_gray_scott,
     simulacion_ks,
     simulacion_gpe,

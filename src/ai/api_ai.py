@@ -12,6 +12,7 @@ app = FastAPI(title="Director IA - Audio Visualizer")
 class PromptRequest(BaseModel):
     prompt: str
     current_lyrics: str = ""
+    model_name: str = "llama3.2" # Por defecto pequeño, se puede cambiar a modelos de hasta 16GB (ej. qwen2.5:14b)
 
 class ConfigResponse(BaseModel):
     engines: List[str]
@@ -90,10 +91,22 @@ async def analyze_scene(request: PromptRequest):
     """
 
     try:
-        response = ollama.chat(model='llama3.2', messages=[
+        # Lógica para usar el 80% de los hilos de CPU
+        cpu_count = os.cpu_count() or 4
+        num_threads = max(1, int(cpu_count * 0.8))
+        
+        # Parámetros adicionales para limitar recursos y temperatura
+        options = {
+            'num_thread': num_threads,
+            'temperature': 0.7
+        }
+
+        print(f"🧠 Usando modelo: {request.model_name} con {num_threads} hilos (80% CPU).")
+
+        response = ollama.chat(model=request.model_name, messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': f"El usuario quiere este estilo visual: '{request.prompt}'"}
-        ])
+        ], options=options)
         
         content = response['message']['content']
         print("\n" + "="*40)

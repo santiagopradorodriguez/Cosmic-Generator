@@ -12,8 +12,8 @@ import os
 
 # Importar módulos estandarizados del proyecto
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from config import WIDTH, HEIGHT, FPS
-from audio_analyzer import analizar_audio
+from core.config import WIDTH, HEIGHT, FPS
+from audio.audio_analyzer import analizar_audio
 
 # --- NÚCLEO MATEMÁTICO OPTIMIZADO (NUMBA) ---
 @jit(nopython=True, fastmath=True, cache=True)

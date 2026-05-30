@@ -1,0 +1,75 @@
+/* style.css - Tema Neón (Inspirado en Spotify y Cyberpunk) */
+
+/* Fondo general */
+.stApp {
+    background-color: #121212;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #000000;
+    border-right: 1px solid #282828;
+}
+
+/* Títulos y Headers */
+h1, h2, h3 {
+    color: #1DB954 !important; /* Verde Spotify / Neon */
+    text-shadow: 0 0 10px rgba(29, 185, 84, 0.5);
+    font-weight: 800;
+}
+
+/* Botones principales */
+.stButton > button {
+    background: linear-gradient(45deg, #1DB954, #1ed760);
+    color: #000000 !important;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+}
+
+.stButton > button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(29, 185, 84, 0.6);
+    border: none;
+    background: linear-gradient(45deg, #1ed760, #1DB954);
+}
+
+/* Cajas de estado (info, success, warning) */
+div[data-testid="stAlert"] {
+    background-color: rgba(40, 40, 40, 0.8) !important;
+    border: 1px solid #333 !important;
+    border-radius: 10px !important;
+}
+
+/* Texto genérico */
+p, li, span {
+    color: #b3b3b3;
+}
+
+/* Inputs y Selectores */
+.stTextInput > div > div > input, .stSelectbox > div > div > select {
+    background-color: #282828 !important;
+    color: white !important;
+    border: 1px solid #404040 !important;
+    border-radius: 5px;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: #1DB954 !important;
+    box-shadow: 0 0 5px rgba(29, 185, 84, 0.5) !important;
+}
+
+/* Contenedores tipo tarjeta */
+.css-1r6slb0, .css-12oz5g7 {
+    background-color: #181818;
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid #282828;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}

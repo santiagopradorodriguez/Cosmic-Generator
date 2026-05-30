@@ -22,9 +22,9 @@ def simulacion_gray_scott(U, V, out_U, out_V, Du, Dv, f, k, dt, seed_mask=None, 
     
     for r in prange(1, rows - 1):
         for c in range(1, cols - 1):
-            # Stencil de 5 puntos
-            lap_u = (U[r+1, c] + U[r-1, c] + U[r, c+1] + U[r, c-1] - 4*U[r, c])
-            lap_v = (V[r+1, c] + V[r-1, c] + V[r, c+1] + V[r, c-1] - 4*V[r, c])
+            # Stencil de 9 puntos (Laplaciano Isotrópico)
+            lap_u = 0.2 * (U[r+1, c] + U[r-1, c] + U[r, c+1] + U[r, c-1]) + 0.05 * (U[r+1, c+1] + U[r+1, c-1] + U[r-1, c+1] + U[r-1, c-1]) - 1.0 * U[r, c]
+            lap_v = 0.2 * (V[r+1, c] + V[r-1, c] + V[r, c+1] + V[r, c-1]) + 0.05 * (V[r+1, c+1] + V[r+1, c-1] + V[r-1, c+1] + V[r-1, c-1]) - 1.0 * V[r, c]
             
             uvv = U[r, c] * V[r, c] * V[r, c]
             
@@ -60,7 +60,7 @@ def simulacion_ondas(u, u_prev, out_u, damping, c2_dt2, seed_mask=None):
     
     for r in prange(1, rows - 1):
         for c in range(1, cols - 1):
-            lap = (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c])
+            lap = 0.2 * (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1]) + 0.05 * (u[r+1, c+1] + u[r+1, c-1] + u[r-1, c+1] + u[r-1, c-1]) - 1.0 * u[r, c]
             val = 2*u[r, c] - u_prev[r, c] + c2_dt2 * lap
             val *= damping
             
@@ -114,8 +114,8 @@ def simulacion_gpe(psi_real, psi_imag, out_r, out_i, V, g, dt):
     # Paso 1: Evolución
     for r in prange(1, rows - 1):
         for c in range(1, cols - 1):
-            lap_r = psi_real[r+1, c] + psi_real[r-1, c] + psi_real[r, c+1] + psi_real[r, c-1] - 4*psi_real[r, c]
-            lap_i = psi_imag[r+1, c] + psi_imag[r-1, c] + psi_imag[r, c+1] + psi_imag[r, c-1] - 4*psi_imag[r, c]
+            lap_r = 0.2 * (psi_real[r+1, c] + psi_real[r-1, c] + psi_real[r, c+1] + psi_real[r, c-1]) + 0.05 * (psi_real[r+1, c+1] + psi_real[r+1, c-1] + psi_real[r-1, c+1] + psi_real[r-1, c-1]) - 1.0 * psi_real[r, c]
+            lap_i = 0.2 * (psi_imag[r+1, c] + psi_imag[r-1, c] + psi_imag[r, c+1] + psi_imag[r, c-1]) + 0.05 * (psi_imag[r+1, c+1] + psi_imag[r+1, c-1] + psi_imag[r-1, c+1] + psi_imag[r-1, c-1]) - 1.0 * psi_imag[r, c]
             
             densidad = psi_real[r, c]**2 + psi_imag[r, c]**2
             potencial = V[r, c] + g * densidad

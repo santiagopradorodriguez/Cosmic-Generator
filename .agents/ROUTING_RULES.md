@@ -22,4 +22,7 @@ DEBES invocar estrictamente a la habilidad correspondiente usando su nombre si d
 6. **Creación de archivos nuevos desde cero para asegurar que incluyan la marca de agua y los créditos del proyecto:**
    👉 DEBES invocar la habilidad: `@marca-de-agua`
 
+7. **Liderazgo, modelo de negocio, viabilidad práctica, comunicación directa con el usuario, y organización de asambleas democráticas entre agentes:**
+   👉 DEBES invocar la habilidad: `@gerente-empresa`
+
 **INSTRUCCIÓN CRÍTICA:** Nunca intentes resolver cálculos complejos de ecuaciones diferenciales o tomar decisiones de dirección general por tu cuenta. Siempre delega la tarea al agente correspondiente para garantizar la máxima calidad en el resultado.

@@ -1,3 +1,16 @@
+
+import sys
+import os
+# Hack para que los subdirectorios puedan ver los modulos de src/
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = current_dir
+while not src_dir.endswith('src') and not src_dir.endswith('src\\') and not src_dir.endswith('src/'):
+    parent = os.path.dirname(src_dir)
+    if parent == src_dir:
+        break
+    src_dir = parent
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -11,8 +24,8 @@ from numba import jit
 from scipy.ndimage import gaussian_filter
 
 # Importar nuestros módulos
-from efectos_visuales import CamaraVirtual, MotorFX
-from config import WIDTH, HEIGHT # Importar resolución global
+from core.efectos_visuales import CamaraVirtual, MotorFX
+from core.config import WIDTH, HEIGHT # Importar resolución global
 
 # Configuración FFmpeg
 plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()

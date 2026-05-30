@@ -9,8 +9,8 @@ import textwrap
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 # Importar Motor de Lyrics
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from motor_lyrics import LyricsEngine
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from audio.motor_lyrics import LyricsEngine
 
 # Compatibilidad MoviePy 1.0 y 2.0
 try:
@@ -65,31 +65,8 @@ def get_visual_energy(video_path):
         print(f"⚠️ No se pudo analizar {os.path.basename(video_path)}: {e}")
         return 0.5
 
-def main():
-    print("🎬 INICIANDO DIRECTOR IA (Edición Automática)...")
-    
-    if len(sys.argv) < 2:
-        print("❌ Error: Debes proporcionar un archivo de audio.")
-        return
-
-    audio_path = sys.argv[1]
-    duration_arg = None
-    clips_dir_arg = None
-    
-    # Parsear argumentos
-    if "--duration" in sys.argv:
-        try:
-            idx = sys.argv.index("--duration")
-            duration_arg = float(sys.argv[idx+1])
-        except:
-            pass
-            
-    if "--clips_dir" in sys.argv:
-        try:
-            idx = sys.argv.index("--clips_dir")
-            clips_dir_arg = sys.argv[idx+1]
-        except:
-            pass
+def generar_montaje_ia(audio_path, duration_arg=None, clips_dir_arg=None, output_filename="Director_AI_Final.mp4", progress_callback=None):
+    if progress_callback: progress_callback(5, "Iniciando Director IA (Buscando clips)...")
 
     # 1. Buscar videos generados
     candidates = []
@@ -111,11 +88,10 @@ def main():
                     candidates.append(full_path)
     
     if not candidates:
-        print("❌ No se encontraron videos (.mp4) para editar.")
-        print("👉 Primero genera algunos videos usando los botones 'Render Estándar', 'Neural', etc.")
-        return
+        if progress_callback: progress_callback(0, "Error: No hay clips en la carpeta.")
+        return None
 
-    print(f"✅ Se encontraron {len(candidates)} clips para la mezcla.")
+    if progress_callback: progress_callback(10, f"Analizando {len(candidates)} clips...")
 
     # 1.5 Analizar Energía Visual de los Clips (PyTorch)
     print("🧠 Director Neural: Analizando energía visual de los clips...")
@@ -134,6 +110,7 @@ def main():
                 x['score'] = (x['score'] - min_s) / (max_s - min_s)
 
     # 2. Analizar Audio
+    if progress_callback: progress_callback(30, "Analizando beats y frecuencias de audio...")
     print(f"🎵 Analizando audio: {os.path.basename(audio_path)}")
     try:
         y, sr = librosa.load(audio_path, duration=duration_arg)
@@ -145,6 +122,7 @@ def main():
         return
 
     # 3. Crear Edición
+    if progress_callback: progress_callback(50, "Calculando cortes y emparejando clips...")
     print("✂️ Calculando cortes basados en el ritmo...")
     final_clips = []
     
@@ -198,10 +176,12 @@ def main():
         last_t = t
 
     # 4. Renderizar
+    if progress_callback: progress_callback(70, "Montando video final...")
     print("🎞️ Renderizando video final...")
     final_video = concatenate_videoclips(final_clips, method="compose")
     
     # --- 5. AÑADIR SUBTÍTULOS (LYRICS) ---
+    if progress_callback: progress_callback(85, "Procesando e incrustando subtítulos (Lyrics)...")
     print("📝 Procesando subtítulos...")
     try:
         lyrics_engine = LyricsEngine(audio_path)
@@ -312,12 +292,25 @@ def main():
     else:
         final_video = final_video.set_audio(audio)
     
-    output_filename = "Director_AI_Final.mp4"
-    if clips_dir_arg and os.path.exists(clips_dir_arg):
-        output_filename = os.path.join(clips_dir_arg, "Director_AI_Final.mp4")
-    
     final_video.write_videofile(output_filename, codec='libx264', audio_codec='aac', fps=24)
-    print(f"✅ Video final guardado en: {output_filename}")
+    if progress_callback: progress_callback(100, "¡Video completado y guardado!")
+    return output_filename
+
+def main():
+    print("🎬 INICIANDO DIRECTOR IA (Edición Automática) DESDE CONSOLA...")
+    if len(sys.argv) < 2:
+        print("❌ Error: Debes proporcionar un archivo de audio.")
+        return
+    audio = sys.argv[1]
+    dur = None
+    if "--duration" in sys.argv: dur = float(sys.argv[sys.argv.index("--duration")+1])
+    cdir = None
+    if "--clips_dir" in sys.argv: cdir = sys.argv[sys.argv.index("--clips_dir")+1]
+    
+    out = "Director_AI_Final.mp4"
+    if cdir: out = os.path.join(cdir, out)
+    
+    generar_montaje_ia(audio, dur, cdir, out)
 
 if __name__ == "__main__":
     main()
