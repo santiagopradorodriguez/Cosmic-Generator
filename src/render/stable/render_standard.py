@@ -431,13 +431,6 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
 
             # Escalar a HD
             bg_layer = cv2.resize(bg_layer, (WIDTH, HEIGHT), interpolation=cv2.INTER_LINEAR)
-            
-            # --- BORDES NEGROS (Outline) ---
-            # Detectar bordes en la imagen para resaltar figuras
-            gray_temp = cv2.cvtColor(bg_layer, cv2.COLOR_BGR2GRAY)
-            edges = cv2.Canny(gray_temp, 30, 100) # Umbrales para detectar bordes
-            edges = cv2.dilate(edges, None, iterations=1) # Engrosar un poco
-            bg_layer[edges > 0] = [0, 0, 0] # Pintar bordes de negro puro
            
             # Oscurecer el fondo si la música es baja
             # FIX: Establecer piso mínimo (0.4) para que la física no desaparezca
