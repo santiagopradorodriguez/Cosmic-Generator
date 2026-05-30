@@ -82,7 +82,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
     total_frames = audio_data['total_frames']
 
     if seed is not None:
-        print(f"🌱 Usando Seed: {seed}")
+        print(f"Usando Seed: {seed}")
         np.random.seed(seed)
 
     # 1.5 Motor de Letras (Lyrics)
@@ -90,10 +90,10 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
     if use_lyrics:
         try:
             from audio.motor_lyrics import LyricsEngine
-            print("🎤 Inicializando Motor de Lyrics (Stable-TS)...")
+            print("Inicializando Motor de Lyrics (Stable-TS)...")
             lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion)
         except Exception as e:
-            print(f"⚠️ Error cargando LyricsEngine: {e}")
+            print(f"Advertencia: Error cargando LyricsEngine: {e}")
 
     print(f"--- 2. Inicializando Motor de Física (Numba Accelerated) ---")
 
@@ -542,7 +542,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
         return True
 
     except Exception as e:
-        print(f"❌ Error crítico: {e}")
+        print(f"Error critico: {e}")
         import traceback
         traceback.print_exc()
         return False

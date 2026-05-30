@@ -22,9 +22,10 @@ def simulacion_gray_scott(U, V, out_U, out_V, Du, Dv, f, k, dt, seed_mask=None, 
     
     for r in prange(1, rows - 1):
         for c in range(1, cols - 1):
-            # Stencil de 9 puntos (Laplaciano Isotrópico ESCALADO x4 para visibilidad)
-            lap_u = 0.8 * (U[r+1, c] + U[r-1, c] + U[r, c+1] + U[r, c-1]) + 0.2 * (U[r+1, c+1] + U[r+1, c-1] + U[r-1, c+1] + U[r-1, c-1]) - 4.0 * U[r, c]
-            lap_v = 0.8 * (V[r+1, c] + V[r-1, c] + V[r, c+1] + V[r, c-1]) + 0.2 * (V[r+1, c+1] + V[r+1, c-1] + V[r-1, c+1] + V[r-1, c-1]) - 4.0 * V[r, c]
+            # Stencil de 9 puntos (Laplaciano Isotrópico ESCALADO espacialmente)
+            dx_g = 1.2 # Mayor a 1 = Estructuras más grandes y suaves
+            lap_u = (0.8 * (U[r+1, c] + U[r-1, c] + U[r, c+1] + U[r, c-1]) + 0.2 * (U[r+1, c+1] + U[r+1, c-1] + U[r-1, c+1] + U[r-1, c-1]) - 4.0 * U[r, c]) / (dx_g**2)
+            lap_v = (0.8 * (V[r+1, c] + V[r-1, c] + V[r, c+1] + V[r, c-1]) + 0.2 * (V[r+1, c+1] + V[r+1, c-1] + V[r-1, c+1] + V[r-1, c-1]) - 4.0 * V[r, c]) / (dx_g**2)
             
             uvv = U[r, c] * V[r, c] * V[r, c]
             
@@ -60,8 +61,9 @@ def simulacion_ondas(u, u_prev, out_u, damping, c2_dt2, seed_mask=None):
     
     for r in prange(1, rows - 1):
         for c in range(1, cols - 1):
-            # Stencil escalado x4
-            lap = 0.8 * (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1]) + 0.2 * (u[r+1, c+1] + u[r+1, c-1] + u[r-1, c+1] + u[r-1, c-1]) - 4.0 * u[r, c]
+            # Stencil escalado espacialmente
+            dx_g = 1.2
+            lap = (0.8 * (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1]) + 0.2 * (u[r+1, c+1] + u[r+1, c-1] + u[r-1, c+1] + u[r-1, c-1]) - 4.0 * u[r, c]) / (dx_g**2)
             val = 2*u[r, c] - u_prev[r, c] + c2_dt2 * lap
             val *= damping
             
@@ -80,24 +82,26 @@ def simulacion_ks(u, out_u, dt):
     
     for r in prange(2, rows - 2):
         for c in range(2, cols - 2):
+            # Grid scale (Estructuras más grandes y turbulentas)
+            dx_g = 1.5
+            
             # Laplaciano
-            lap = u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c]
+            lap = (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c]) / (dx_g**2)
             
             # Biharmónico (Stencil expandido para evitar buffer intermedio)
             bilap = (u[r+2,c] + u[r-2,c] + u[r,c+2] + u[r,c-2] + 
                      2*(u[r+1,c+1] + u[r+1,c-1] + u[r-1,c+1] + u[r-1,c-1]) - 
-                     8*(u[r+1,c] + u[r-1,c] + u[r,c+1] + u[r,c-1]) + 20*u[r,c])
+                     8*(u[r+1,c] + u[r-1,c] + u[r,c+1] + u[r,c-1]) + 20*u[r,c]) / (dx_g**4)
             
             # Gradiente al cuadrado
-            dx = (u[r, c+1] - u[r, c-1]) * 0.5
-            dy = (u[r+1, c] - u[r-1, c]) * 0.5
+            dx = (u[r, c+1] - u[r, c-1]) * 0.5 / dx_g
+            dy = (u[r+1, c] - u[r-1, c]) * 0.5 / dx_g
             grad_sq = dx*dx + dy*dy
             
             val = u[r, c] + dt * (-bilap - lap - grad_sq)
             
-            # Estabilidad KS
-            if val > 50.0: val = 50.0
-            elif val < -50.0: val = -50.0
+            # Estabilidad KS: Clamping suave con tanh (evita bloqueos numéricos)
+            val = np.tanh(val / 20.0) * 20.0
             
             out_u[r, c] = val
             
@@ -116,8 +120,9 @@ def simulacion_gpe(psi_real, psi_imag, out_r, out_i, V, g, dt):
     for r in prange(1, rows - 1):
         for c in range(1, cols - 1):
             # Stencil escalado x4
-            lap_r = 0.8 * (psi_real[r+1, c] + psi_real[r-1, c] + psi_real[r, c+1] + psi_real[r, c-1]) + 0.2 * (psi_real[r+1, c+1] + psi_real[r+1, c-1] + psi_real[r-1, c+1] + psi_real[r-1, c-1]) - 4.0 * psi_real[r, c]
-            lap_i = 0.8 * (psi_imag[r+1, c] + psi_imag[r-1, c] + psi_imag[r, c+1] + psi_imag[r, c-1]) + 0.2 * (psi_imag[r+1, c+1] + psi_imag[r+1, c-1] + psi_imag[r-1, c+1] + psi_imag[r-1, c-1]) - 4.0 * psi_imag[r, c]
+            dx_g = 1.2
+            lap_r = (0.8 * (psi_real[r+1, c] + psi_real[r-1, c] + psi_real[r, c+1] + psi_real[r, c-1]) + 0.2 * (psi_real[r+1, c+1] + psi_real[r+1, c-1] + psi_real[r-1, c+1] + psi_real[r-1, c-1]) - 4.0 * psi_real[r, c]) / (dx_g**2)
+            lap_i = (0.8 * (psi_imag[r+1, c] + psi_imag[r-1, c] + psi_imag[r, c+1] + psi_imag[r, c-1]) + 0.2 * (psi_imag[r+1, c+1] + psi_imag[r+1, c-1] + psi_imag[r-1, c+1] + psi_imag[r-1, c-1]) - 4.0 * psi_imag[r, c]) / (dx_g**2)
             
             densidad = psi_real[r, c]**2 + psi_imag[r, c]**2
             potencial = V[r, c] + g * densidad
@@ -153,13 +158,13 @@ def simulacion_cahn_hilliard(u, out_u, dt, gamma, mobility):
     # Usamos pseudo-difusión directa para visualización
     for r in prange(2, rows - 2):
         for c in range(2, cols - 2):
-            lap_u = u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c]
+            dx_g = 1.5
+            lap_u = (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c]) / (dx_g**2)
             mu = (u[r, c]**3 - u[r, c]) - gamma * lap_u
             
             val = u[r, c] - dt * mobility * mu
             
-            if val > 1.0: val = 1.0
-            elif val < -1.0: val = -1.0
+            val = np.tanh(val) # Clamping suave
             out_u[r, c] = val
 
 
@@ -190,9 +195,8 @@ def simulacion_kdv(u, out_u, dt, alpha, beta):
             
             val = u[r, c] + dt * du
             
-            # Clamping para estabilidad visual
-            if val > 10.0: val = 10.0
-            elif val < -10.0: val = -10.0
+            # Clamping suave (evita saltos bruscos en los solitones)
+            val = np.tanh(val / 15.0) * 15.0
             
             out_u[r, c] = val
             
