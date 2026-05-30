@@ -223,6 +223,12 @@ elif menu == "🎛️ Generador":
                         res_container.append(transcribir_audio_para_edicion(temp_audio_path, model_size=whisper_model))
                     
                     t = threading.Thread(target=run_extraction)
+                    # Añadir contexto de Streamlit al hilo para evitar "missing ScriptRunContext"
+                    try:
+                        from streamlit.runtime.scriptrunner import add_script_run_ctx
+                        add_script_run_ctx(t)
+                    except ImportError:
+                        pass
                     t.start()
                     
                     # Barra de progreso simulada inteligente
