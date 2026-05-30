@@ -431,10 +431,6 @@ class LyricsEngine:
     def draw(self, frame, time, kick=0.0):
         """
         Dibuja la palabra actual en el frame usando OpenCV.
-        :param frame: Imagen BGR (numpy array).
-        :param time: Tiempo actual en segundos.
-        :param kick: Valor RMS percusivo (0 a 1) para hacer vibrar las letras.
-        :return: Frame modificado.
         """
         word = self.get_current_word(time)
         if not word:
@@ -442,20 +438,31 @@ class LyricsEngine:
             
         h, w = frame.shape[:2]
         
-        # Configuración dinámica de fuente (Letras MASIVAS para el VJ)
+        # Suavizado del bombo (EMA) para evitar saltos violentos
+        if not hasattr(self, 'smoothed_kick'):
+            self.smoothed_kick = 0.0
+        self.smoothed_kick = self.smoothed_kick * 0.7 + kick * 0.3
+        
         # PIL ImageDraw soporta tildes y caracteres especiales (UTF-8)
         img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(img_pil)
         
-        # Tamaño base relativo a la pantalla + vibración por la música (kick)
-        base_size = h // 8
-        kick_bump = int((h // 15) * kick)
+        # Tamaño base relativo a la pantalla + vibración por la música (kick suavizado)
+        base_size = h // 10
+        kick_bump = int((h // 20) * self.smoothed_kick)
         font_size = base_size + kick_bump
         
         try:
-            font = ImageFont.truetype("arial.ttf", font_size)
+            # Intentar usar fuentes gruesas (Impact o Arial Black)
+            font = ImageFont.truetype("impact.ttf", font_size)
         except IOError:
-            font = ImageFont.load_default()
+            try:
+                font = ImageFont.truetype("ariblk.ttf", font_size)
+            except IOError:
+                try:
+                    font = ImageFont.truetype("arial.ttf", font_size)
+                except IOError:
+                    font = ImageFont.load_default()
             
         try:
             left, top, right, bottom = draw.textbbox((0, 0), word, font=font)
@@ -463,17 +470,24 @@ class LyricsEngine:
         except AttributeError:
             text_w, text_h = draw.textsize(word, font=font)
         
-        # Centrado perfecto en la pantalla para fusionarse con el núcleo
+        # Centrado en el tercio inferior de la pantalla para no tapar la física principal
         x = (w - text_w) // 2
-        y = (h - text_h) // 2 
+        y = int(h * 0.75) - (text_h // 2)
         
-        # Borde negro (Outline) dinámico
-        outline_thickness = max(2, font_size // 12)
-        for ox, oy in [(-1,-1), (-1,1), (1,-1), (1,1), (-2,0), (2,0), (0,-2), (0,2)]:
-            draw.text((x + ox*outline_thickness, y + oy*outline_thickness), word, font=font, fill=(0, 0, 0))
+        # Sombra paralela suave (Drop Shadow)
+        shadow_offset = max(2, font_size // 15)
+        # Dibujar sombra (varias capas para simular blur)
+        for ox in range(0, shadow_offset + 1, 2):
+            for oy in range(0, shadow_offset + 1, 2):
+                if ox > 0 or oy > 0:
+                    draw.text((x + ox, y + oy), word, font=font, fill=(0, 0, 0))
         
-        # Texto blanco
-        draw.text((x, y), word, font=font, fill=(255, 255, 255))
+        # Texto principal brillante (Cian/Neón)
+        # El color puede reaccionar a la energía
+        r = int(100 + self.smoothed_kick * 155)
+        g = 255
+        b = int(200 + self.smoothed_kick * 55)
+        draw.text((x, y), word, font=font, fill=(r, g, b))
         
         frame = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
         return frame
