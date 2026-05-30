@@ -23,7 +23,7 @@ def corregir_ortografia_whisper(texto):
     texto = re.sub(r' +', ' ', texto)
     return texto.strip()
 
-def transcribir_audio_para_edicion(audio_path, model_size="medium"):
+def transcribir_audio_para_edicion(audio_path, model_size="medium", max_duration=0):
     """
     Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
     Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
@@ -50,7 +50,8 @@ def transcribir_audio_para_edicion(audio_path, model_size="medium"):
             os.environ["PATH"] += os.pathsep + ffmpeg_dir
             
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        audio_array, _ = librosa.load(audio_path, sr=16000, mono=True)
+        dur = max_duration if max_duration > 0 else None
+        audio_array, _ = librosa.load(audio_path, sr=16000, mono=True, duration=dur)
         model = stable_whisper.load_model(model_size, device=device)
         result = model.transcribe(audio_array, language='es', vad=False)
         
@@ -69,12 +70,14 @@ def transcribir_audio_para_edicion(audio_path, model_size="medium"):
         return f"Error al transcribir el audio. Detalles técnicos: {e}"
 
 class LyricsEngine:
-    def __init__(self, audio_path):
+    def __init__(self, audio_path, max_duration=None):
         """
         Inicializa el motor de lyrics.
         :param audio_path: Ruta al archivo de audio.
+        :param max_duration: Si se especifica, solo procesa esta cantidad de segundos.
         """
         self.audio_path = os.path.abspath(audio_path)
+        self.max_duration = max_duration
         # El archivo JSON se guardará en la misma carpeta que el audio con el mismo nombre base
         self.json_path = os.path.splitext(audio_path)[0] + ".json"
         self.data = {} # Inicializar vacío para evitar NoneType error
@@ -174,7 +177,7 @@ class LyricsEngine:
             # Cargar modelo y transcribir
             # CARGA DE AUDIO CON LIBROSA (Más robusto que FFmpeg CLI)
             print(f"   🔊 Cargando audio con Librosa (16kHz)...")
-            audio_array, _ = librosa.load(self.audio_path, sr=16000, mono=True)
+            audio_array, _ = librosa.load(self.audio_path, sr=16000, mono=True, duration=self.max_duration)
 
             # CAMBIO: Usamos 'medium' en lugar de 'large-v2' para evitar que se congele en CPU
             print("   🧠 Cargando modelo Whisper 'medium' (Balance velocidad/precisión)...")

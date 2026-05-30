@@ -91,7 +91,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
         try:
             from audio.motor_lyrics import LyricsEngine
             print("🎤 Inicializando Motor de Lyrics (Stable-TS)...")
-            lyrics_engine = LyricsEngine(ruta_audio)
+            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion)
         except Exception as e:
             print(f"⚠️ Error cargando LyricsEngine: {e}")
 

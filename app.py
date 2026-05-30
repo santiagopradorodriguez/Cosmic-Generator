@@ -246,7 +246,11 @@ elif menu == "🎛️ Generador":
                     
                     res_container = []
                     def run_extraction():
-                        res_container.append(transcribir_audio_para_edicion(temp_audio_path, model_size=whisper_model))
+                        res_container.append(transcribir_audio_para_edicion(
+                            temp_audio_path, 
+                            model_size=whisper_model,
+                            max_duration=ui_duracion
+                        ))
                     
                     t = threading.Thread(target=run_extraction)
                     # Añadir contexto de Streamlit al hilo para evitar "missing ScriptRunContext"
