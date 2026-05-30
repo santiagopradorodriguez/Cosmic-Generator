@@ -13,17 +13,23 @@ from render.stable.render_standard import generar_animacion_god_mode
 from core.video_utils import unir_video_con_musica
 from audio.motor_lyrics import transcribir_audio_para_edicion
 
+import time
+
 class StreamlitLogRedirector:
     """Redirige stdout y stderr a un elemento de Streamlit en tiempo real."""
     def __init__(self, st_empty_element):
         self.st_empty_element = st_empty_element
         self.text = ""
         self.terminal = sys.stdout
+        self.last_update = 0
     def write(self, msg):
         self.text += msg
         self.terminal.write(msg)
-        # Mostrar las últimas 2500 letras para no saturar Streamlit
-        self.st_empty_element.code(self.text[-2500:], language='bash')
+        now = time.time()
+        # Actualizar UI como máximo 2 veces por segundo (cada 0.5s) para evitar colapsar Websockets con barras tqdm
+        if now - self.last_update > 0.5:
+            self.st_empty_element.code(self.text[-2500:], language='bash')
+            self.last_update = now
     def flush(self):
         self.terminal.flush()
 
