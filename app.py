@@ -196,8 +196,43 @@ elif menu == "🎛️ Generador":
                 with open(temp_audio_path, "wb") as f:
                     f.write(audio_file.getbuffer())
                     
-                with st.spinner("La Inteligencia Artificial está transcribiendo y corrigiendo ortografía..."):
-                    texto_extraido = transcribir_audio_para_edicion(temp_audio_path)
+                st.markdown("### 🖥️ Consola de Extracción (IA)")
+                log_box_letra = st.empty()
+                progress_bar_letra = st.progress(0)
+                
+                # Activar redirección de logs también para la extracción
+                redirector_letra = StreamlitLogRedirector(log_box_letra)
+                old_stdout = sys.stdout
+                old_stderr = sys.stderr
+                sys.stdout = redirector_letra
+                sys.stderr = redirector_letra
+                
+                texto_extraido = ""
+                try:
+                    import threading
+                    import time
+                    
+                    res_container = []
+                    def run_extraction():
+                        res_container.append(transcribir_audio_para_edicion(temp_audio_path))
+                    
+                    t = threading.Thread(target=run_extraction)
+                    t.start()
+                    
+                    # Barra de progreso simulada inteligente
+                    prog = 0
+                    while t.is_alive():
+                        time.sleep(0.5)
+                        prog += 1
+                        if prog > 95: prog = 95
+                        progress_bar_letra.progress(prog)
+                        
+                    t.join()
+                    progress_bar_letra.progress(100)
+                    texto_extraido = res_container[0] if res_container else "Error desconocido."
+                finally:
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
                     st.session_state.lyrics_text = texto_extraido
                     st.session_state.lyrics_ready = True
             
