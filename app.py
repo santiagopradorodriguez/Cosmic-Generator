@@ -15,8 +15,11 @@ from audio.motor_lyrics import transcribir_audio_para_edicion
 
 import time
 
+import time
+from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
+
 class StreamlitLogRedirector:
-    """Redirige stdout y stderr a un elemento de Streamlit en tiempo real."""
+    """Redirige stdout y stderr a un elemento de Streamlit en tiempo real de forma segura (Thread-Safe)."""
     def __init__(self, st_empty_element):
         self.st_empty_element = st_empty_element
         self.text = ""
@@ -25,8 +28,13 @@ class StreamlitLogRedirector:
     def write(self, msg):
         self.text += msg
         self.terminal.write(msg)
+        
+        # Ignorar actualización visual si el log viene de un hilo secundario sin contexto (Numba, Audio)
+        if get_script_run_ctx() is None:
+            return
+            
         now = time.time()
-        # Actualizar UI como máximo 2 veces por segundo (cada 0.5s) para evitar colapsar Websockets con barras tqdm
+        # Actualizar UI como máximo 2 veces por segundo (cada 0.5s)
         if now - self.last_update > 0.5:
             self.st_empty_element.code(self.text[-2500:], language='bash')
             self.last_update = now
