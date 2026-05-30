@@ -1,0 +1,118 @@
+==============================================================================
+RESUMEN DE HERRAMIENTAS MATEMÁTICAS DEL PROYECTO
+VISUALIZACIÓN DE AUDIO PROCEDURAL Y NEURONAL
+==============================================================================
+
+1. INTEGRACIÓN NUMÉRICA Y SIMULACIÓN FÍSICA
+------------------------------------------------------------------------------
+El núcleo visual se basa en resolver Ecuaciones Diferenciales Parciales (EDP) 
+y Ordinarias (EDO) discretizadas en una rejilla (Grid) o partículas.
+
+A. Método de Diferencias Finitas (FDM)
+   Utilizado en: Gray-Scott, Ecuación de Ondas, Cahn-Hilliard.
+   - Concepto: Aproximación de derivadas mediante restas de valores vecinos.
+   - Laplaciano Discreto (Stencil de 5 puntos):
+     ∇²u ≈ u[i+1,j] + u[i-1,j] + u[i,j+1] + u[i,j-1] - 4u[i,j]
+
+B. Método de Euler Explícito (Forward Euler)
+   Utilizado en: Gray-Scott, Lorenz, Gross-Pitaevskii (simplificado).
+   - Fórmula: u(t + dt) = u(t) + f(u, t) * dt
+   - Aplicación: Actualización iterativa del estado de los sistemas paso a paso.
+   - Ventaja: Rápido y fácil de paralelizar con Numba.
+   - Desventaja: Requiere pasos de tiempo (dt) muy pequeños para no divergir.
+
+C. Integración de Verlet
+   Utilizado en: Ecuación de Ondas (simulacion_ondas).
+   - Fórmula: u(t+dt) = 2u(t) - u(t-dt) + a(t) * dt²
+   - Característica: Conserva mejor la energía en sistemas oscilatorios y es 
+     reversible en el tiempo (sin amortiguación).
+
+D. Lattice Boltzmann Method (LBM) - Esquema D2Q9
+   Utilizado en: render_lbm.py (Fluidos).
+   - Modelo: BGK (Bhatnagar-Gross-Krook) para el operador de colisión.
+   - Ecuación: f_i(x + c_i*dt, t + dt) = f_i(x, t) - (1/τ) * (f_i - f_eq)
+   - Momentos Macroscópicos:
+     * Densidad (ρ) = Suma de funciones de distribución (f).
+     * Velocidad (u) = Promedio ponderado de f por los vectores dirección.
+   - Streaming: Desplazamiento de datos a celdas vecinas (Advección).
+
+E. Sistemas Dinámicos Caóticos (Atractor de Lorenz)
+   - Sistema de 3 EDOs acopladas no lineales:
+     dx/dt = σ(y - x)
+     dy/dt = x(ρ - z) - y
+     dz/dt = xy - βz
+
+
+2. CONDICIONES DE ESTABILIDAD
+------------------------------------------------------------------------------
+Para evitar que las simulaciones "exploten" (valores infinitos o NaN), se 
+respetan ciertos criterios matemáticos:
+
+A. Condición CFL (Courant-Friedrichs-Lewy)
+   - Aplicación: Ecuación de Ondas y Fluidos.
+   - Criterio: La información no puede viajar más rápido que un paso de rejilla 
+     por paso de tiempo.
+   - Fórmula: C = (u * dt) / dx ≤ C_max
+
+B. Estabilidad de Von Neumann (Difusión)
+   - Aplicación: Gray-Scott.
+   - Criterio: D * dt / dx² < 0.5
+   - En el código: Se usan coeficientes de difusión (Da, Db) bajos (0.16, 0.08) 
+     y dt=1.0 para mantener la estabilidad numérica.
+
+C. Relajación en LBM
+   - Parámetro Tau (τ): Relacionado con la viscosidad cinemática.
+   - Condición: τ > 0.5. En el código se usa τ = 0.9 para garantizar estabilidad 
+     ante las inyecciones bruscas de energía del audio ("Kicks").
+
+D. Sanitización de Datos (Clamping)
+   - Técnica: np.clip() y np.nan_to_num().
+   - Uso: Forzar valores dentro de rangos seguros (ej. -50 a 50) para evitar 
+     desbordamiento de punto flotante (Overflow).
+
+
+3. MATEMÁTICAS DE PROCESAMIENTO DE AUDIO (DSP)
+------------------------------------------------------------------------------
+Extracción de características usando Librosa (Transformada de Fourier).
+
+A. Transformada de Fourier de Tiempo Corto (STFT)
+   - Descompone la señal en frecuencias a lo largo del tiempo.
+   - X(m, k) = Σ x[n] * w[n-m] * e^(-j2πkn/N)
+
+B. Escala de Mel (Mel-Spectrogram)
+   - Transformación logarítmica de la frecuencia para imitar el oído humano.
+   - m = 2595 * log10(1 + f / 700)
+   - Normalización: Conversión a Decibeles (Escala Logarítmica de amplitud).
+
+C. Separación de Fuentes Armónicas y Percusivas (HPSS)
+   - Algoritmo: Filtrado de mediana sobre el espectrograma.
+   - Horizontal: Captura líneas continuas (Armonía/Voces).
+   - Vertical: Captura transitorios rápidos (Percusión/Golpes).
+
+D. Características Espectrales
+   - Centroide Espectral: Promedio ponderado de frecuencias (Brillo).
+   - RMS (Root Mean Square): Raíz de la media cuadrática (Energía/Volumen).
+   - Chroma: Proyección de la energía en 12 clases de tono (Notas musicales).
+
+
+4. REDES NEURONALES (AUTOENCODERS)
+------------------------------------------------------------------------------
+Utilizado en: render_main_autoencoders.py para mapeo Audio -> Física.
+
+A. Arquitectura: Autoencoder (Compresión de Datos)
+   - Entrada: Espectrograma de Mel (Vector de alta dimensión, ej. 128).
+   - Encoder: Reducción progresiva mediante capas lineales (Dense).
+   - Espacio Latente (Bottleneck): Representación comprimida (dimensión 3).
+     z = f(x)
+   - Decoder: Reconstrucción de la entrada original.
+
+B. Funciones de Activación
+   - ReLU (Rectified Linear Unit): f(x) = max(0, x). Introduce no linealidad.
+   - Tanh (Tangente Hiperbólica): Normaliza el espacio latente entre -1 y 1.
+   - Sigmoid: Normaliza la salida entre 0 y 1 (para coincidir con espectrograma).
+
+C. Optimización
+   - Función de Pérdida (Loss): MSE (Mean Squared Error).
+     L = (1/n) * Σ (Y_real - Y_predicho)²
+   - Optimizador: Adam (Adaptive Moment Estimation). Algoritmo de descenso de 
+     gradiente con momento adaptativo.

@@ -1,0 +1,38 @@
+# Ignorar carpetas generadas automáticamente o de caché
+__pycache__/
+*.pyc
+.env
+.venv/
+env/
+venv/
+
+# Ignorar archivos multimedia y videos (pesados)
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.mkv
+*.mov
+
+# Ignorar directorios de output y temporales
+/RENDERS/
+/temp/
+/output/
+/videos/
+/data/
+/checkpoints_db/
+/models/
+
+# Ignorar bases de datos y otros archivos grandes
+*.csv
+*.db
+*.sqlite3
+*.log
+
+# Entornos de desarrollo
+.vscode/
+.idea/
+
+# Sistema Operativo
+.DS_Store
+Thumbs.db

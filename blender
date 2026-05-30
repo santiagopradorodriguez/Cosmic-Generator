@@ -1,0 +1,267 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import librosa
+import imageio_ffmpeg 
+from tqdm import tqdm
+import os
+
+# --- CONFIGURACIÓN GLOBAL ---
+# Corrección para que Windows encuentre FFmpeg
+plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
+
+# Compatibilidad con versiones de MoviePy
+try:
+    from moviepy import VideoFileClip, AudioFileClip # Versión nueva (2.0)
+except ImportError:
+    from moviepy.editor import VideoFileClip, AudioFileClip # Versión vieja
+
+# ==========================================
+# FUNCIÓN 1: AJUSTAR LETRA
+# ==========================================
+def ajustar_letra():
+    """
+    Devuelve la lista de tuplas (segundo, "frase") sincronizada.
+    Edita esta función para cambiar la letra de tu canción.
+    """
+    # TIP: Usá números decimales para mayor precisión (ej: 4.5)
+    letra = [
+        (0.0,  ""),
+        (4.0,  "Creo que existo, aunque no sé la verdad"),
+        (9.0,  "Recuerdo esos momentos donde había que pensar"),
+        (14.0, "Las horas que pasan, ahora dime, ¿dónde estás?"),
+        (20.0, "Y la nada se esparce y quiero recordar"),
+        (25.0, "El tiempo que pasaba buscando me encontrar"),
+        (30.0, "Y solo sé que hoy, no entenderás"),
+        (35.0, "No entenderás, no entenderás, no entenderás"),
+        (40.0, "No entenderás nada..."),
+        (45.0, "Buscando un comienzo cuando no queda nada más"),
+        (50.0, "Las máquinas viven, pero no hay humanidad"),
+        (55.0, "Las horas que pasan, ¿qué sentido hay?"),
+        (60.0, "El sol y el mar, podía respirar"),
+        (65.0, "Buscaba una estrella sin saber qué va a pasar"),
+        (70.0, "Y poder ver..."),
+        (75.0, "Hoy el sol que se va, el sol que se va"),
+        (80.0, "El sol que se va, el sol que se va"),
+        (90.0, "No entenderás nada..."),
+    ]
+    return letra
+
+# ==========================================
+# FUNCIÓN 2: GENERAR ANIMACIÓN (Física + Visuales)
+# ==========================================
+def generar_animacion_pro(ruta_audio, lista_letras, nombre_salida_temp, fps=24, duracion=None):
+    
+    print(f"--- 1. Analizando audio y planificando escenas: {ruta_audio} ---")
+    
+    # A) ANÁLISIS DE AUDIO
+    try:
+        y, sr = librosa.load(ruta_audio, duration=duracion)
+    except FileNotFoundError:
+        return False
+
+    duracion_total = librosa.get_duration(y=y, sr=sr)
+    total_frames = int(duracion_total * fps)
+    hop_length = int(sr / fps)
+    
+    # Volumen (Energía)
+    volumen = librosa.feature.rms(y=y, hop_length=hop_length)[0]
+    volumen = (volumen - np.min(volumen)) / (np.max(volumen) - np.min(volumen))
+    volumen = np.resize(volumen, total_frames)
+    
+    # "Brillo" (Centroide Espectral) - Para cambiar colores según si es grave o agudo
+    centroide = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)[0]
+    centroide = np.log1p(centroide) # Escala logarítmica para suavizar
+    centroide = (centroide - np.min(centroide)) / (np.max(centroide) - np.min(centroide))
+    centroide = np.resize(centroide, total_frames)
+
+    # B) CONFIGURACIÓN VISUAL
+    print(f"--- 2. Rodando película ({total_frames} frames) ---")
+    plt.style.use('dark_background')
+    fig, ax = plt.subplots(figsize=(16, 9))
+    ax.set_axis_off()
+    ax.set_xlim(-4, 4) # Un poco más de espacio
+    ax.set_ylim(-2.5, 2.5)
+
+    # --- ACTORES (Elementos gráficos) ---
+    # 1. Partículas (Acto 1)
+    num_particulas = 100
+    particulas = ax.scatter([], [], s=10, c='white', alpha=0.6)
+    
+    # 2. Onda Principal (Acto 2 y 3)
+    linea_onda, = ax.plot([], [], lw=2, color='cyan')
+    
+    # 3. El Sol (Acto 3)
+    sol = plt.Circle((0, 0), 0.1, color='orange', alpha=0) # Invisible al principio
+    ax.add_patch(sol)
+
+    # 4. Texto (Siempre presente)
+    texto_lyric = ax.text(0, -2.0, "", ha='center', va='center', fontsize=22, 
+                          color='white', fontname='Arial', weight='bold')
+
+    # Helper de letra
+    def _obtener_frase(t_actual):
+        frase = ""
+        for t, f in reversed(lista_letras):
+            if t_actual >= t:
+                frase = f
+                break
+        return frase
+
+    # --- FUNCIÓN UPDATE (Lógica de Dirección) ---
+    def update(frame):
+        t_actual = frame / fps
+        energia = volumen[frame] if frame < len(volumen) else 0
+        brillo = centroide[frame] if frame < len(centroide) else 0.5
+        
+        # Actualizar Letra
+        texto_lyric.set_text(_obtener_frase(t_actual))
+        
+        # === ESCENA 1: INCERTIDUMBRE (0s - 20s) ===
+        if t_actual < 20:
+            # Esconder actores de otras escenas
+            linea_onda.set_data([], [])
+            sol.set_alpha(0)
+            
+            # Movimiento Browniano de partículas
+            # Usamos 'frame' como semilla de tiempo para que parezca aleatorio pero sea suave
+            np.random.seed(frame) 
+            angulo = np.random.uniform(0, 2*np.pi, num_particulas)
+            radio = np.random.uniform(0, 3, num_particulas)
+            
+            # Las partículas vibran con la música
+            vibracion = energia * 0.5 * np.random.randn(num_particulas)
+            
+            x = (radio + vibracion) * np.cos(angulo + frame * 0.01)
+            y = (radio + vibracion) * np.sin(angulo + frame * 0.01)
+            
+            particulas.set_offsets(np.c_[x, y])
+            particulas.set_sizes(10 + energia * 100 * np.random.rand(num_particulas))
+            particulas.set_color(plt.cm.twilight(brillo)) # Colores místicos
+
+        # === ESCENA 2: LA ONDA / EL VACÍO (20s - 55s) ===
+        elif t_actual < 55:
+            # Esconder partículas
+            particulas.set_offsets(np.empty((0, 2)))
+            sol.set_alpha(0)
+            
+            # Matemática de la Onda
+            theta = np.linspace(0, 2*np.pi, 500)
+            r_base = 1.0
+            
+            # Interferencia de ondas
+            deformacion = energia * (np.sin(10 * theta - frame * 0.2) + np.cos(5 * theta + frame * 0.1))
+            
+            # Glitch visual si la energía es muy alta (golpe fuerte)
+            if energia > 0.6:
+                deformacion += np.random.normal(0, 0.1, len(theta))
+                linea_onda.set_color('#ff00ff') # Magenta neón
+                linea_onda.set_linewidth(4)
+            else:
+                linea_onda.set_color('cyan')
+                linea_onda.set_linewidth(2)
+
+            r = r_base + deformacion
+            x = r * np.cos(theta)
+            y = r * np.sin(theta)
+            linea_onda.set_data(x, y)
+
+        # === ESCENA 3: EL SOL QUE SE VA (55s - Final) ===
+        else:
+            # Esconder partículas y línea (o dejar la línea como órbita lejana)
+            particulas.set_offsets(np.empty((0, 2)))
+            
+            # El Sol crece y pulsa
+            radio_sol = 0.5 + (energia * 1.5) # Pulsa fuerte con el beat
+            sol.radius = radio_sol
+            sol.set_alpha(0.8) # Visible
+            
+            # Color del sol: De Amarillo a Rojo Sangre según intensidad
+            color_sol = plt.cm.autumn(1 - energia) 
+            sol.set_color(color_sol)
+            
+            # La línea ahora es una onda de choque alrededor del sol
+            theta = np.linspace(0, 2*np.pi, 500)
+            r_choque = radio_sol + 0.2 + (energia * 0.5)
+            x = r_choque * np.cos(theta)
+            y = r_choque * np.sin(theta)
+            
+            linea_onda.set_data(x, y)
+            linea_onda.set_color('orange')
+            linea_onda.set_linewidth(1 + energia * 5)
+            
+            # Temblor de cámara (Movemos los límites de los ejes levemente)
+            if energia > 0.7:
+                temblor = np.random.uniform(-0.1, 0.1)
+                ax.set_xlim(-4 + temblor, 4 + temblor)
+            else:
+                ax.set_xlim(-4, 4)
+
+        return particulas, linea_onda, sol, texto_lyric
+
+    # C) RENDERIZADO
+    bar = tqdm(total=total_frames, unit="frame", desc="Procesando")
+    ani = animation.FuncAnimation(fig, update, frames=total_frames, interval=1000/fps, blit=False) # blit=False para que funcionen los cambios de ejes
+    
+    try:
+        ani.save(nombre_salida_temp, writer='ffmpeg', fps=fps, codec='libx264', 
+                 progress_callback=lambda i, n: bar.update(1))
+        bar.close()
+        plt.close(fig)
+        print(f"✅ Video mudo generado: {nombre_salida_temp}")
+        return True
+    except Exception as e:
+        print(f"❌ Error al generar animación: {e}")
+        return False
+# ==========================================
+# FUNCIÓN 3: UNIR VIDEO CON MÚSICA
+# ==========================================
+def unir_video_con_musica(video_mudo_path, audio_path, video_final_path, duracion=None):
+    """
+    Toma el video mudo generado por Matplotlib y le pega el audio original usando MoviePy.
+    """
+    print(f"--- 3. Mezclando audio y exportando final ---")
+    try:
+        video_clip = VideoFileClip(video_mudo_path)
+        audio_clip = AudioFileClip(audio_path)
+
+        if duracion:
+            audio_clip = audio_clip.subclip(0, duracion)
+
+        # Manejo de compatibilidad MoviePy 1.0 vs 2.0
+        try:
+            # Intento versión nueva
+            video_final = video_clip.with_audio(audio_clip)
+        except AttributeError:
+            # Fallback a versión vieja
+            video_final = video_clip.set_audio(audio_clip)
+        
+        video_final.write_videofile(video_final_path, codec='libx264', audio_codec='aac', logger=None)
+        print(f"🎉 ¡ÉXITO! Video final guardado en: {video_final_path}")
+        
+        # Opcional: Borrar el archivo temporal para no ocupar espacio
+        # os.remove(video_mudo_path) 
+        
+    except Exception as e:
+        print(f"❌ Error al unir video y audio: {e}")
+
+# ==========================================
+# EJECUCIÓN PRINCIPAL
+# ==========================================
+if __name__ == "__main__":
+    
+    # 1. Parámetros
+    CANCION = "Rebeldía Cosmica - Sol Que se Va.flac"
+    VIDEO_TEMP = "temp_render.mp4"
+    VIDEO_FINAL = "Rebeldia_Cosmica_Videolyric.mp4"
+    DURACION_PRUEBA = None # Cambiar a 30 para pruebas rápidas
+    
+    # 2. Obtener letras
+    mis_letras = ajustar_letra()
+    
+    # 3. Generar la parte visual (Función 1)
+    exito = generar_animacion_pro(CANCION, mis_letras, VIDEO_TEMP, duracion=DURACION_PRUEBA)
+    
+    # 4. Si salió bien, ponerle audio (Función 2)
+    if exito:
+        unir_video_con_musica(VIDEO_TEMP, CANCION, VIDEO_FINAL, duracion=DURACION_PRUEBA)
