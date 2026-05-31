@@ -3,7 +3,6 @@ import json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import cv2
-import torch
 import librosa
 import imageio_ffmpeg
 import subprocess
@@ -26,9 +25,9 @@ def corregir_ortografia_whisper(texto):
 def transcribir_audio_para_edicion(audio_path, model_size="medium", max_duration=0):
     """
     Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
-    Extrae la letra usando Whisper y la pasa por el corrector ortográfico.
     Devuelve el texto puro para que el usuario lo edite en la UI.
     """
+    import torch
     try:
         try:
             import stable_whisper
