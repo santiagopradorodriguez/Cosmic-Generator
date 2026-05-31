@@ -389,7 +389,8 @@ def generar_animacion_god_mode(
                 
                 scene_flags['lorenz'] = (np.random.rand() < chance_lorenz) and use_lorenz
                 scene_flags['leaves'] = np.random.rand() < 0.3
-                scene_flags['superforma'] = (np.random.rand() < 0.4) and use_geometry
+                chance_superforma = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'ifs' in allowed_engines) else 0.4
+                scene_flags['superforma'] = (np.random.rand() < chance_superforma) and use_geometry
             
             
             bg_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)

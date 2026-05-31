@@ -344,7 +344,7 @@ class LorenzSwarm:
                 for i in range(1, len(screen_pts)):
                     pt1 = screen_pts[i-1]
                     pt2 = screen_pts[i]
-                    thick = max(2, int((i / 80) * 8 * (1 + cymbals))) # Más grueso
+                    thick = max(4, int((i / 80) * 12 * (1 + cymbals))) # Más grueso, brillo neon garantizado
                     color_line = color_bgr_override if color_bgr_override else attr['color_bgr']
                     cv2.line(frame, pt1, pt2, color_line, thick, cv2.LINE_AA)
 
