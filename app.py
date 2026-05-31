@@ -120,9 +120,14 @@ if menu == "🏠 Inicio":
     - **Director IA:** Deja que nuestra IA escuche la canción, imagine la escena y elija los parámetros.
     - **Motores:** Explora el modo manual y motores experimentales (Caos, IFS, LBM).
     
+    ### 🌟 Novedades (V2.1)
+    - **Cromestesia Global:** La IA ahora extrae la "Tonalidad Reina" de toda la canción (ej. Do Mayor, Sol Menor) y fuerza una paleta emocional a todos los motores físicos (Otoño, Océano, Fuego, etc). ¡El color ya no rota caóticamente!
+    - **Modo Sinestesia (Multi-Stems):** Separación neuronal de pistas. La batería controla el caos y la cámara, la voz brilla las letras, y los sintetizadores mutan la geometría sagrada.
+    - **Estabilidad Matemática:** Se parchó la explosión numérica del motor de Redes Neuronales (CPPN). ¡Adiós errores NaN!
+    
     ### Instrucciones
     1. Ve a la pestaña **Generador**.
-    2. Sube o selecciona tu archivo `.wav`.
+    2. Sube o selecciona tu archivo `.wav` (o usa la pestaña **Separador de Stems** primero).
     3. Ajusta los parámetros o pide sugerencias a la IA.
     4. Haz clic en generar y disfruta del arte matemático.
     """)

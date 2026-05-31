@@ -621,8 +621,14 @@ def generar_animacion_god_mode(
             
             # EFECTO PSICODÉLICO 1: Rotación de Color Global
             # El color gira lentamente, y rápido cuando hay mucha energía armónica
-            hue_accumulator += 0.5 + (harm * 5.0)
-            bg_layer = fx_producer.shift_hue(bg_layer, int(hue_accumulator))
+            # FIX: Solo rotamos el color si la Cromestesia Global está APAGADA.
+            if not use_chroma:
+                hue_accumulator += 0.5 + (harm * 5.0)
+                bg_layer = fx_producer.shift_hue(bg_layer, int(hue_accumulator))
+            
+            # Forzar fondo negro si el motor principal es exclusivamente Caos 3D o Partículas
+            if escena['engine'] in ['lorenz', 'PARTICLES']:
+                bg_layer = np.zeros_like(bg_layer)
             
             # --- EFECTO CALEIDOSCOPIO (MANDALA) ---
             if 'kaleido' in escena and escena['kaleido'] and use_kaleido:

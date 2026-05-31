@@ -1,15 +1,16 @@
-# 🌌 Cosmic Generator V2.0
+# 🌌 Cosmic Generator V2.1
 **El Motor Visual de la Cooperativa "Rebeldía Cósmica"**
 
 ¡Bienvenidxs a la revolución visual! **Cosmic Generator** es un avanzado motor de arte matemático impulsado por Inteligencia Artificial y dinámicas no lineales. Nuestra herramienta está diseñada para "escuchar" la música, respirar su esencia y generar visuales deslumbrantes basados en la comunión entre el caos algorítmico y nuestro Director de IA. 
 
 Aquí no hay barreras de presupuesto: creemos firmemente que todo artista emergente tiene derecho a un videoclip espectacular. ¡Democratizar el arte es nuestra misión!
 
-## 🚀 Características
-- **Modularidad:** Motores separados por ramas estables (Fluidos, Automatas Celulares) y experimentales (Caos 3D, IFS).
-- **Director de IA:** Analiza la pista de audio y selecciona la estética visual, la paleta de colores y el motor de renderizado mediante Deep Learning.
+## 🚀 Características (Actualizadas V2.1)
+- **Cromestesia Global (NUEVO):** La IA extrae la "Tonalidad Reina" absoluta de la canción y fuerza una Paleta de Color Sinestésica Emocional a todo el video.
+- **Sinestesia Multi-Stems (NUEVO):** Integración con redes neuronales de aislamiento acústico. El caos físico responde a la batería, el arte matemático responde a los sintetizadores y la rotación al bajo.
+- **Modularidad:** Motores separados por ramas estables (Fluidos, Automatas Celulares) y experimentales (Redes Neuronales CPPN, Caos 3D Lorenz, Fractales IFS).
+- **Director de IA:** Analiza la pista de audio y selecciona la estética visual y los parámetros mediante IA.
 - **Interfaz Streamlit Neón:** Una interfaz fácil e intuitiva con estilo Cyberpunk/Spotify para una experiencia de usuario fluida.
-- **Sinestesia de Color (Cromestesia):** Los visuales reaccionan a las notas musicales dominantes, inyectando color basado en la teoría musical.
 
 ## 🌟 Cooperativa Central de Agentes IA
 
