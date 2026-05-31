@@ -12,7 +12,7 @@ def run_tests():
     # Intentar usar un archivo de audio real de 5s, o dejar que Laboratorio genere uno sintético.
     # Dado que estamos probando TODOS los motores, usaremos el modo Laboratorio (ruta_audio=None) para que no dependa de archivos.
     
-    for motor in ACTOS:
+    for motor in ['lorenz']:
         print(f"\nProbando Motor: {motor}")
         start = time.time()
         try:
@@ -26,7 +26,7 @@ def run_tests():
                 use_spirits=False,
                 use_kaleido=False,
                 use_flash=False,
-                use_chroma=False,
+                use_chroma=True,
                 use_lyrics=False,
                 progress_callback=None
             )

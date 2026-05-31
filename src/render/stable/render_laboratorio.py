@@ -46,6 +46,15 @@ def simular_laboratorio_puro(nombre_salida="sim_laboratorio.mp4", fps=30, duraci
     
     print(f"[LABORATORIO PURO] Iniciando motor: {engine_code}")
     
+    # Importar motores experimentales
+    from core.visual_entities import LorenzSwarm, SuperformaProcedural
+    from core.nucleo_neural import FastCPPN
+    import torch
+    
+    lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=12)
+    superforma = SuperformaProcedural(WIDTH, HEIGHT)
+    cppn_model = FastCPPN() if engine_code == 'CPPN' else None
+    
     # --- Estado Inicial Riguroso ---
     gs_w, gs_h = WIDTH // 4, HEIGHT // 4
     
@@ -158,6 +167,32 @@ def simular_laboratorio_puro(nombre_salida="sim_laboratorio.mp4", fps=30, duraci
             img_norm = np.log1p(clifford_density)
             img_norm /= np.max(img_norm + 1e-6)
             cmap_name = 'hot'
+            
+        elif engine_code == 'lorenz':
+            frame_final = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
+            kick_sim = np.sin(i * 0.1) * 0.5 + 0.5
+            cym_sim = np.sin(i * 0.3) * 0.5 + 0.5
+            lorenz_swarm.update(frame_final, 0.005, kick_sim, cym_sim, visible=True, color_bgr_override=(255, 100, 0)) # Cian
+            out.write(frame_final)
+            continue
+            
+        elif engine_code == 'ifs':
+            frame_final = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
+            kick_sim = np.sin(i * 0.2) * 0.5 + 0.5
+            harm_sim = np.sin(i * 0.05) * 0.5 + 0.5
+            superforma.update(frame_final, i * 0.02, kick_sim, harm_sim, color_rgb=(0.0, 1.0, 0.5))
+            out.write(frame_final)
+            continue
+            
+        elif engine_code == 'CPPN':
+            # CPPN requiere PyTorch y genera la imagen completa directamente
+            kick_sim = np.sin(i * 0.15) * 0.5 + 0.5
+            harm_sim = np.sin(i * 0.08) * 0.5 + 0.5
+            with torch.no_grad():
+                frame_rgb = cppn_model.generar_frame(i * 0.02, kick_sim, harm_sim, color_tint=(0.5, 0.0, 1.0))
+            frame_final = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+            out.write(frame_final)
+            continue
         
         # 3. COLORMAP CIENTÍFICO ESTRUCTURAL (OPTIMIZADO VÍA LUT)
         img_norm = np.clip(img_norm, 0.0, 1.0)
