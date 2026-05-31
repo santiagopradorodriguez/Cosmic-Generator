@@ -25,6 +25,7 @@ from core.nucleo_visual import (
     simulacion_gpe,
     simulacion_ondas,
     simulacion_ohta_kawasaki,
+    simulacion_cahn_hilliard,
     simulacion_kdv,
     simulacion_ifs,
     update_particles
@@ -478,20 +479,33 @@ def generar_animacion_god_mode(
                     wave_u_prev *= 0.5 # CORRECCIÓN FÍSICO: Escalar prev también para evitar choque no físico
                 
                 # FIX: Añadido argumento faltante (seed_mask=None)
-                simulacion_ondas(wave_u, wave_u_prev, wave_u_next, damping, c2, None)
+                simulacion_ondas(wave_u, wave_u_prev, wave_u_next, damping, c2)
                 wave_u_prev, wave_u, wave_u_next = wave_u, wave_u_next, wave_u_prev
                 
-                # CONTRASTE FUERTE: Usar valor absoluto para que 0 sea negro, no gris
-                img_norm = np.abs(wave_u) 
+                img_norm = 0.5 + (wave_u * 0.5) # Centrar en gris medio
                 img_norm = np.clip(img_norm, 0, 1) # Asegurar rango
                 
-            elif escena['engine'] == 'CH':
-                # Ohta-Kawasaki (Burbujas y laberintos estables)
+            elif escena['engine'] == 'OK':
+                # Ohta-Kawasaki (Allen-Cahn extendido - Burbujas y laberintos estables)
                 gamma = 0.5 + textura * 0.5
                 mobility = 0.1 + kick * 0.05
                 simulacion_ohta_kawasaki(ch_u, ch_u_next, dt=0.05 * dt_dynamic, gamma=gamma, mobility=mobility)
                 ch_u, ch_u_next = ch_u_next, ch_u
                 img_norm = (ch_u + 1.0) / 2.0 # Normalizar de -1,1 a 0,1
+
+            elif escena['engine'] == 'CH':
+                # Cahn-Hilliard (Verdadera Separación de Fases)
+                gamma = 1.0
+                mobility = 1.0 * (1 + kick)
+                # Inyección de ruido masivo si el sistema está muy plano (evita que se congele)
+                if np.max(ch_u) - np.min(ch_u) < 0.1:
+                    ch_u += np.random.uniform(-1, 1, ch_u.shape).astype(np.float32)
+                
+                # Iterar más veces para que las manchas engorden visiblemente
+                for _ in range(15):
+                    simulacion_cahn_hilliard(ch_u, ch_u_next, dt=0.001 * dt_dynamic, gamma=gamma, mobility=mobility)
+                    ch_u, ch_u_next = ch_u_next, ch_u
+                img_norm = (ch_u + 1) / 2 # Normalizar de -1,1 a 0,1
                 
             elif escena['engine'] == 'KDV':
                 # Korteweg-de Vries (Zakharov-Kuznetsov)

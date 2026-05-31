@@ -168,6 +168,7 @@ elif menu == "🎛️ Generador":
                     "Gross-Pitaevskii (Cuántica)", 
                     "Ecuación de Ondas (Líquido)",
                     "Allen-Cahn / Ohta-Kawasaki (Burbujas)",
+                    "Cahn-Hilliard Clásico (Aceite y Agua)",
                     "KdV (Tsunamis)",
                     "Caos 3D (Atractores de Lorenz)",
                     "Geometría Sagrada (Fractales IFS)",
@@ -201,6 +202,7 @@ elif menu == "🎛️ Generador":
                     e4 = st.checkbox("Ecuación de Ondas (Líquido)", value=True)
                 with colB:
                     e5 = st.checkbox("Allen-Cahn (Burbujas)", value=True)
+                    e5b = st.checkbox("Cahn-Hilliard Clásico", value=True)
                     e6 = st.checkbox("KdV (Tsunamis)", value=True)
                     e7 = st.checkbox("Caos 3D (Atractores de Lorenz)", value=False)
                     e8 = st.checkbox("Geometría Sagrada (Fractales IFS)", value=False)
@@ -210,7 +212,8 @@ elif menu == "🎛️ Generador":
                 if e2: custom_engines_list.append('KS')
                 if e3: custom_engines_list.append('GPE')
                 if e4: custom_engines_list.append('WAVE')
-                if e5: custom_engines_list.append('CH')
+                if e5: custom_engines_list.append('OK')
+                if e5b: custom_engines_list.append('CH')
                 if e6: custom_engines_list.append('KDV')
                 if e7: custom_engines_list.append('lorenz')
                 if e8: custom_engines_list.append('ifs')
@@ -228,6 +231,8 @@ elif menu == "🎛️ Generador":
         elif modo_render == "Ecuación de Ondas (Líquido)":
             allowed_engines_list = ['WAVE']
         elif modo_render == "Allen-Cahn / Ohta-Kawasaki (Burbujas)":
+            allowed_engines_list = ['OK']
+        elif modo_render == "Cahn-Hilliard Clásico (Aceite y Agua)":
             allowed_engines_list = ['CH']
         elif modo_render == "KdV (Tsunamis)":
             allowed_engines_list = ['KDV']
@@ -540,6 +545,7 @@ elif menu == "🧪 Laboratorio de Física":
                 "Gross-Pitaevskii (Cuántica)", 
                 "Ecuación de Ondas (Líquido)",
                 "Allen-Cahn / Ohta-Kawasaki (Burbujas)",
+                "Cahn-Hilliard Clásico (Aceite y Agua)",
                 "KdV (Tsunamis)",
                 "Caos 3D (Atractores de Lorenz)",
                 "Atractor de Clifford (Caos 2D)",
@@ -571,7 +577,16 @@ elif menu == "🧪 Laboratorio de Física":
             \frac{\partial^2 u}{\partial t^2} = c^2 \nabla^2 u - \gamma \frac{\partial u}{\partial t}
             ''',
             "Allen-Cahn / Ohta-Kawasaki (Burbujas)": r'''
-            \frac{\partial u}{\partial t} = \nabla \cdot (M \nabla \mu) - \gamma (u - \overline{u}), \quad \mu = u^3 - u - \nabla^2 u
+            **Ecuación de Ohta-Kawasaki (Frustración Topológica):**
+            $$ \frac{\partial u}{\partial t} = M(\nabla^2 \mu) - \sigma(u - \bar{u}) $$
+            $$ \mu = u^3 - u - \gamma \nabla^2 u $$
+            *Dinámica:* El término $\sigma$ fuerza la formación de burbujas pequeñas o laberintos repulsivos, simulando membranas celulares estables.
+            ''',
+            "Cahn-Hilliard Clásico (Aceite y Agua)": r'''
+            **Ecuación de Cahn-Hilliard:**
+            $$ \frac{\partial u}{\partial t} = \nabla \cdot (M \nabla \mu) $$
+            $$ \mu = u^3 - u - \gamma \nabla^2 u $$
+            *Dinámica:* Modela la separación de fases termodinámica. Las manchas se agrupan libremente formando manchas gigantes y fluidas.
             ''',
             "KdV (Tsunamis)": r'''
             \frac{\partial u}{\partial t} + \alpha u \frac{\partial u}{\partial x} + \beta \frac{\partial^3 u}{\partial x^3} = 0
@@ -602,9 +617,10 @@ elif menu == "🧪 Laboratorio de Física":
             "Gray-Scott Puro": "Espacio de Fases Estables: F ∈ [0.01, 0.06], k ∈ [0.03, 0.07]",
             "Kuramoto-Sivashinsky (Fuego)": "Restricción de Estabilidad: dt < 0.01 (CFL condition)",
             "Gross-Pitaevskii (Cuántica)": "Condición: Conservación de |ψ|^2 = 1.0",
-            "Ecuación de Ondas (Líquido)": "Límites Courant: c * dt / dx <= 1",
+            "Ecuación de Ondas (Líquido)": "Estabilidad: Damping < 1.0, c² < 0.5",
             "Allen-Cahn / Ohta-Kawasaki (Burbujas)": "Estabilidad: Movilidad M < 0.1, dt < 0.05",
-            "KdV (Tsunamis)": "Espacio Solitónico: α > 0, β > 0. Si β < 0 -> Choque inelástico.",
+            "Cahn-Hilliard Clásico (Aceite y Agua)": "Estabilidad: Movilidad M < 0.1, dt < 0.05",
+            "KdV (Tsunamis)": "Estabilidad: alpha pequeño, beta < 0.01",
             "Caos 3D (Atractores de Lorenz)": "Rango Caótico Estándar: σ=10, β=8/3, ρ=28",
             "Atractor de Clifford (Caos 2D)": "Parámetros Estándar: a=-1.4, b=1.6, c=1.0, d=0.7",
             "Geometría Sagrada (Fractales IFS)": "Restricción Contractiva: det(A_i) < 1",
@@ -635,7 +651,8 @@ elif menu == "🧪 Laboratorio de Física":
         elif motor_lab == "Kuramoto-Sivashinsky (Fuego)": lab_engines = ['KS']
         elif motor_lab == "Gross-Pitaevskii (Cuántica)": lab_engines = ['GPE']
         elif motor_lab == "Ecuación de Ondas (Líquido)": lab_engines = ['WAVE']
-        elif motor_lab == "Allen-Cahn / Ohta-Kawasaki (Burbujas)": lab_engines = ['CH']
+        elif motor_lab == "Allen-Cahn / Ohta-Kawasaki (Burbujas)": lab_engines = ['OK']
+        elif motor_lab == "Cahn-Hilliard Clásico (Aceite y Agua)": lab_engines = ['CH']
         elif motor_lab == "KdV (Tsunamis)": lab_engines = ['KDV']
         elif motor_lab == "Caos 3D (Atractores de Lorenz)": lab_engines = ['lorenz']
         elif motor_lab == "Atractor de Clifford (Caos 2D)": lab_engines = ['CLIFFORD']

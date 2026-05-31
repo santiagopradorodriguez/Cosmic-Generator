@@ -1,13 +1,14 @@
 numpy
 matplotlib
-opencv-python
+opencv-python-headless
 imageio-ffmpeg
 tqdm
 requests
 SpeechRecognition
-pyaudio
 streamlit
 librosa
 fastapi
 uvicorn
-moviepy
+moviepy<2.0.0
+numba
+scipy

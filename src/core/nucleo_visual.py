@@ -151,7 +151,7 @@ def simulacion_gpe(psi_real, psi_imag, out_r, out_i, V, g, dt):
                 out_i[r, c] *= norm_factor
 
 # ==========================================
-# 5. OHTA-KAWASAKI (FRUSTRACIÓN TOPOLÓGICA)
+# 5A. OHTA-KAWASAKI (FRUSTRACIÓN TOPOLÓGICA / ALLEN-CAHN EXTENDIDO)
 # ==========================================
 @jit(nopython=True, parallel=True, fastmath=True)
 def simulacion_ohta_kawasaki(u, out_u, dt, gamma, mobility, sigma=0.08):
@@ -176,6 +176,31 @@ def simulacion_ohta_kawasaki(u, out_u, dt, gamma, mobility, sigma=0.08):
             val = u[r, c] - dt * mobility * mu - dt * sigma * (u[r, c] - u_mean)
             
             val = np.tanh(val) # Clamping suave
+            out_u[r, c] = val
+
+# ==========================================
+# 5B. CAHN-HILLIARD (CLÁSICO / ACEITE Y AGUA)
+# ==========================================
+@jit(nopython=True, parallel=True, fastmath=True)
+def simulacion_cahn_hilliard(u, out_u, dt, gamma, mobility):
+    rows, cols = u.shape
+    mu = np.zeros_like(u)
+    
+    # Paso 1: Calcular potencial químico (mu) en todo el grid
+    for r in prange(1, rows - 1):
+        for c in range(1, cols - 1):
+            lap_u = u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c]
+            mu[r, c] = (u[r, c]**3 - u[r, c]) - gamma * lap_u
+            
+    # Paso 2: Evolucionar u usando el Laplaciano de mu (Conservación de masa)
+    for r in prange(2, rows - 2):
+        for c in range(2, cols - 2):
+            lap_mu = mu[r+1, c] + mu[r-1, c] + mu[r, c+1] + mu[r, c-1] - 4*mu[r, c]
+            # La verdadera ec. Cahn-Hilliard usa + Laplaciano(mu)
+            val = u[r, c] + dt * mobility * lap_mu
+            
+            # Estabilidad visual: Clamping suave
+            val = np.tanh(val)
             out_u[r, c] = val
 
 
