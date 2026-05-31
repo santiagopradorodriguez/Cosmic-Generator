@@ -347,6 +347,8 @@ class LorenzSwarm:
                     thick = max(4, int((i / 80) * 12 * (1 + cymbals))) # Más grueso, brillo neon garantizado
                     color_line = color_bgr_override if color_bgr_override else attr['color_bgr']
                     cv2.line(frame, pt1, pt2, color_line, thick, cv2.LINE_AA)
+                    # Core blanco brillante para sobrevivir la compresión H.264 y baja luminancia
+                    cv2.line(frame, pt1, pt2, (255, 255, 255), max(1, thick // 3), cv2.LINE_AA)
 
 class GeneradorHojas:
     """

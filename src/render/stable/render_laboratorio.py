@@ -48,12 +48,12 @@ def simular_laboratorio_puro(nombre_salida="sim_laboratorio.mp4", fps=30, duraci
     
     # Importar motores experimentales
     from core.visual_entities import LorenzSwarm, SuperformaProcedural
-    from core.nucleo_neural import FastCPPN
+    from core.nucleo_neural import CPPNEngine
     import torch
     
     lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=12)
     superforma = SuperformaProcedural(WIDTH, HEIGHT)
-    cppn_model = FastCPPN() if engine_code == 'CPPN' else None
+    cppn_model = CPPNEngine(WIDTH, HEIGHT) if engine_code == 'CPPN' else None
     
     # --- Estado Inicial Riguroso ---
     gs_w, gs_h = WIDTH // 4, HEIGHT // 4
@@ -187,9 +187,8 @@ def simular_laboratorio_puro(nombre_salida="sim_laboratorio.mp4", fps=30, duraci
         elif engine_code == 'CPPN':
             # CPPN requiere PyTorch y genera la imagen completa directamente
             kick_sim = np.sin(i * 0.15) * 0.5 + 0.5
-            harm_sim = np.sin(i * 0.08) * 0.5 + 0.5
             with torch.no_grad():
-                frame_rgb = cppn_model.generar_frame(i * 0.02, kick_sim, harm_sim, color_tint=(0.5, 0.0, 1.0))
+                frame_rgb = cppn_model.generate_frame(i * 0.02, kick_sim)
             frame_final = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
             out.write(frame_final)
             continue
