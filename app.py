@@ -302,6 +302,13 @@ elif menu == "🎛️ Generador":
                         progress_bar.progress(100)
                         st.success(f"✅ ¡Video generado con éxito! Guardado en: {final_video}")
                         st.video(final_video)
+                        with open(final_video, "rb") as file:
+                            st.download_button(
+                                label="💾 Descargar Video Generado",
+                                data=file,
+                                file_name=os.path.basename(final_video),
+                                mime="video/mp4"
+                            )
                     else:
                         st.error("Error durante el renderizado físico.")
                 except Exception as e:
@@ -423,6 +430,13 @@ elif menu == "🎬 Director IA":
                     if res:
                         st.success(f"✅ ¡Montaje Épico completado! Guardado en {res}")
                         st.video(res)
+                        with open(res, "rb") as file:
+                            st.download_button(
+                                label="💾 Descargar Montaje IA",
+                                data=file,
+                                file_name=os.path.basename(res),
+                                mime="video/mp4"
+                            )
                     else:
                         st.error("El Director IA no pudo completar el montaje. Asegúrate de tener clips renderizados preexistentes en la carpeta.")
                 except Exception as e:
@@ -679,6 +693,13 @@ elif menu == "🧪 Laboratorio de Física":
                 if success and os.path.exists(temp_video_lab):
                     st.success("✅ Simulación rigurosa completada.")
                     st.video(temp_video_lab)
+                    with open(temp_video_lab, "rb") as file:
+                        st.download_button(
+                            label="💾 Descargar Simulación",
+                            data=file,
+                            file_name=os.path.basename(temp_video_lab),
+                            mime="video/mp4"
+                        )
                 else:
                     st.error("Error al generar la simulación determinista.")
             except Exception as e:

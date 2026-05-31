@@ -12,3 +12,6 @@ uvicorn
 moviepy<2.0.0
 numba
 scipy
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+openai-whisper
