@@ -246,3 +246,59 @@ def update_particles(pos, vel, force_field, width, height, damp, max_speed, seed
         if pos[i, 1] >= height: pos[i, 1] -= height
 
     return pos, vel
+
+# ==========================================
+# 7. CAOS 3D (ATRACTOR DE LORENZ)
+# ==========================================
+@jit(nopython=True, parallel=True, fastmath=True)
+def simulacion_lorenz(particulas, dt, sigma=10.0, rho=28.0, beta=8.0/3.0):
+    n = particulas.shape[0]
+    for i in prange(n):
+        x = particulas[i, 0]
+        y = particulas[i, 1]
+        z = particulas[i, 2]
+        
+        dx = sigma * (y - x) * dt
+        dy = (x * (rho - z) - y) * dt
+        dz = (x * y - beta * z) * dt
+        
+        particulas[i, 0] += dx
+        particulas[i, 1] += dy
+        particulas[i, 2] += dz
+    return particulas
+
+# ==========================================
+# 8. FRACTALES IFS (GEOMETRÍA SAGRADA)
+# ==========================================
+@jit(nopython=True, fastmath=True)
+def simulacion_ifs(grid, iters, transform_matrix, prob, cx, cy):
+    h, w = grid.shape
+    x, y = 0.0, 0.0
+    N = transform_matrix.shape[0]
+    
+    for i in range(iters):
+        r = np.random.random()
+        acum = 0.0
+        idx = 0
+        for j in range(N):
+            acum += prob[j]
+            if r <= acum:
+                idx = j
+                break
+                
+        a = transform_matrix[idx, 0]
+        b = transform_matrix[idx, 1]
+        c = transform_matrix[idx, 2]
+        d = transform_matrix[idx, 3]
+        e = transform_matrix[idx, 4]
+        f = transform_matrix[idx, 5]
+        
+        nx = a*x + b*y + e
+        ny = c*x + d*y + f
+        x, y = nx, ny
+        
+        px = int(x * cx + w/2)
+        py = int(y * cy + h/2)
+        
+        if 0 <= px < w and 0 <= py < h:
+            grid[py, px] += 1.0

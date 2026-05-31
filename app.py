@@ -63,6 +63,13 @@ class StreamlitLogRedirector:
             
     def flush(self):
         self.terminal.flush()
+        
+    def isatty(self):
+        return False
+        
+    @property
+    def encoding(self):
+        return getattr(self.terminal, 'encoding', 'utf-8')
 
 # Configuración de la página (DEBE ser la primera llamada a st)
 st.set_page_config(
@@ -90,7 +97,7 @@ with st.sidebar:
     
     menu = st.radio(
         "Navegación",
-        ["🏠 Inicio", "🎛️ Generador", "🎬 Director IA", "🧪 Motores", "⚙️ Configuración", "📚 Academia Matemática", "🧪 Laboratorio de Física"]
+        ["🏠 Inicio", "🎛️ Generador", "🎬 Director IA", "🧪 Motores", "🎧 Separador de Stems", "⚙️ Configuración", "📚 Academia Matemática", "🧪 Laboratorio de Física"]
     )
     
     st.markdown("---")
@@ -120,6 +127,22 @@ if menu == "🏠 Inicio":
     4. Haz clic en generar y disfruta del arte matemático.
     """)
     
+    st.markdown("---")
+    st.markdown("### 🎬 Última Creación (Showcase)")
+    import glob
+    import os
+    renders_dir = "RENDERS"
+    if os.path.exists(renders_dir):
+        videos = glob.glob(os.path.join(renders_dir, "*.mp4"))
+        if videos:
+            latest_video = max(videos, key=os.path.getctime)
+            st.markdown(f"**Viendo:** `{os.path.basename(latest_video)}`")
+            st.video(latest_video)
+        else:
+            st.info("Aún no has renderizado ningún video. ¡Ve al Generador para crear el primero!")
+    else:
+        st.info("Aún no has renderizado ningún video. ¡Ve al Generador para crear el primero!")
+        
 elif menu == "🎛️ Generador":
     st.title("Generador de Videos (Motores Estables)")
     
@@ -153,8 +176,12 @@ elif menu == "🎛️ Generador":
             use_spirits = st.checkbox("Usar Espíritus", value=True)
             use_kaleido = st.checkbox("Efecto Caleidoscopio", value=True)
             use_flash = st.checkbox("Flash/Bloom", value=True)
-            use_chroma = st.checkbox("Color por Nota Musical", value=False)
+            use_chroma = st.checkbox("Activar Cromestesia Global (Color por Vibra de la Canción)", value=False)
+            use_stems = st.checkbox("Modo Sinestesia (Usar Stems si existen)", value=False, help="Si ya usaste el Separador de Pistas, la física reaccionará de forma independiente a cada instrumento.")
             use_lyrics = st.checkbox("Incrustar Letra (Lyrics Neón)", value=False)
+            lyrics_pos = "Abajo"
+            if use_lyrics:
+                lyrics_pos = st.radio("Posición de la Letra", ["Abajo", "Centro"], horizontal=True)
             
         allowed_engines_list = None
         custom_engines_list = []
@@ -252,6 +279,9 @@ elif menu == "🎛️ Generador":
                         use_flash=use_flash,
                         use_chroma=use_chroma,
                         use_lyrics=use_lyrics,
+                        lyrics_pos=lyrics_pos,
+                        use_stems=use_stems,
+                        stem_folder=os.path.join(os.getcwd(), "STEMS", "htdemucs", os.path.splitext(audio_file.name)[0]),
                         progress_callback=update_progress
                     )
                     progress_bar.progress(100)
@@ -298,36 +328,18 @@ elif menu == "🎛️ Generador":
                 
                 texto_extraido = ""
                 try:
-                    import threading
                     import time
+                    print("Iniciando transcripción con IA... (Esto puede tomar varios minutos)")
+                    progress_bar_letra.progress(10)
                     
-                    res_container = []
-                    def run_extraction():
-                        res_container.append(transcribir_audio_para_edicion(
-                            temp_audio_path, 
-                            model_size=whisper_model,
-                            max_duration=ui_duracion
-                        ))
+                    texto_extraido = transcribir_audio_para_edicion(
+                        temp_audio_path, 
+                        model_size=whisper_model,
+                        max_duration=ui_duracion
+                    )
                     
-                    t = threading.Thread(target=run_extraction)
-                    # Añadir contexto de Streamlit al hilo para evitar "missing ScriptRunContext"
-                    try:
-                        add_script_run_ctx(t)
-                    except Exception:
-                        pass
-                    t.start()
-                    
-                    # Barra de progreso simulada inteligente
-                    prog = 0
-                    while t.is_alive():
-                        time.sleep(0.5)
-                        prog += 1
-                        if prog > 95: prog = 95
-                        progress_bar_letra.progress(prog)
-                        
-                    t.join()
                     progress_bar_letra.progress(100)
-                    texto_extraido = res_container[0] if res_container else "Error desconocido."
+                    print("¡Extracción completada con éxito!")
                 finally:
                     sys.stdout = old_stdout
                     sys.stderr = old_stderr
@@ -423,6 +435,92 @@ elif menu == "📚 Academia Matemática":
     except FileNotFoundError:
         st.warning("El reporte matemático aún se está generando o no se encontró el archivo. Por favor espera unos minutos e intenta nuevamente.")
 
+elif menu == "🎧 Separador de Stems":
+    st.title("Separador de Pistas (Stems) 🎧")
+    st.markdown("""
+    Utiliza IA (**Demucs de Meta**) para separar tu canción en **Batería, Bajo, Voces y Otros**.
+    *Nota: Si es la primera vez que lo usas, descargará automáticamente el modelo preentrenado (puede tardar unos minutos).*
+    """)
+    
+    audio_file = st.file_uploader("Sube tu canción (.wav, .mp3, .flac)", type=["wav", "mp3", "flac"], key="stem_uploader")
+    
+    if audio_file is not None:
+        st.audio(audio_file, format='audio/wav')
+        
+        if st.button("Separar Pistas (4 Stems)", type="primary"):
+            with st.spinner("Instalando dependencias e inicializando Demucs..."):
+                import subprocess
+                import sys
+                
+                # Verificar e instalar demucs si no existe
+                try:
+                    import demucs
+                except ImportError:
+                    st.info("Instalando Demucs... (esto solo ocurre una vez)")
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "demucs"])
+                    st.success("Demucs instalado. Comenzando separación...")
+            
+            with st.spinner("Separando audio en Batería, Bajo, Voces y Otros... (Esto tomará tiempo)"):
+                # Guardar temp file forzando conversión a WAV puro (PCM_16)
+                import tempfile
+                import librosa
+                import soundfile as sf
+                
+                y, sr = librosa.load(audio_file, sr=None)
+                
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                    temp_audio_path = tmp_file.name
+                    
+                sf.write(temp_audio_path, y, sr, subtype='PCM_16')
+                
+                # Ejecutar comando demucs
+                stem_output_dir = os.path.join(os.getcwd(), "STEMS")
+                os.makedirs(stem_output_dir, exist_ok=True)
+                
+                try:
+                    # Usar script wrapper propio para evitar el bug de torchaudio en Windows
+                    script_wrapper = os.path.join(os.getcwd(), "run_demucs.py")
+                    cmd = [sys.executable, script_wrapper, "-n", "htdemucs", "-o", stem_output_dir, temp_audio_path]
+                    
+                    # Ejecución interactiva para barra de carga en vivo
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, universal_newlines=True)
+                    
+                    progress_bar = st.progress(0.0)
+                    status_text = st.empty()
+                    status_text.text("Iniciando motores de IA...")
+                    
+                    for line in process.stdout:
+                        if "%|" in line:
+                            try:
+                                pct_str = line.split("%|")[0].strip()
+                                pct = min(float(pct_str) / 100.0, 1.0)
+                                progress_bar.progress(pct)
+                                status_text.text(f"Decodificando y separando frecuencias: {int(pct*100)}%")
+                            except:
+                                pass
+                                
+                    process.wait()
+                    if process.returncode == 0:
+                        progress_bar.progress(1.0)
+                        status_text.text("¡Completado!")
+                        st.success("¡Separación completada con éxito!")
+                        st.balloons()
+                        
+                        # Mostrar rutas
+                        base_name = os.path.splitext(os.path.basename(temp_audio_path))[0]
+                        folder_path = os.path.join(stem_output_dir, "htdemucs", base_name)
+                        st.markdown(f"**Tus stems están guardados en:** `{folder_path}`")
+                        
+                        st.info("Abre esa carpeta en tu explorador de archivos para ver 'drums.wav', 'bass.wav', 'vocals.wav' y 'other.wav'.")
+                    else:
+                        st.error(f"Error al separar pistas. Revisa la consola para más detalles. (Exit Code: {process.returncode})")
+                        
+                except Exception as e:
+                    st.error(f"Error crítico durante la separación: {e}")
+                finally:
+                    if os.path.exists(temp_audio_path):
+                        os.remove(temp_audio_path)
+
 elif menu == "🧪 Laboratorio de Física":
     st.title("Laboratorio de Simulación (Sin Música)")
     st.markdown("Modo de simulación puramente física. No requiere canciones. Se inyectan perturbadores matemáticos sintéticos para observar la dinámica canónica de los sistemas fluidos y de reacción-difusión.")
@@ -439,6 +537,7 @@ elif menu == "🧪 Laboratorio de Física":
                 "Allen-Cahn / Ohta-Kawasaki (Burbujas)",
                 "KdV (Tsunamis)",
                 "Caos 3D (Atractores de Lorenz)",
+                "Atractor de Clifford (Caos 2D)",
                 "Geometría Sagrada (Fractales IFS)",
                 "Red Neuronal Rápida (CPPN)"
             ]
@@ -479,6 +578,12 @@ elif menu == "🧪 Laboratorio de Física":
             \dot{z} &= xy-\beta z
             \end{align*}
             ''',
+            "Atractor de Clifford (Caos 2D)": r'''
+            \begin{align*}
+            x_{n+1} &= \sin(a y_n) + c \cos(a x_n) \\
+            y_{n+1} &= \sin(b x_n) + d \cos(b y_n)
+            \end{align*}
+            ''',
             "Geometría Sagrada (Fractales IFS)": r'''
             W_i(x) = A_i x + b_i, \quad P(x \to W_i(x)) = p_i
             ''',
@@ -496,6 +601,7 @@ elif menu == "🧪 Laboratorio de Física":
             "Allen-Cahn / Ohta-Kawasaki (Burbujas)": "Estabilidad: Movilidad M < 0.1, dt < 0.05",
             "KdV (Tsunamis)": "Espacio Solitónico: α > 0, β > 0. Si β < 0 -> Choque inelástico.",
             "Caos 3D (Atractores de Lorenz)": "Rango Caótico Estándar: σ=10, β=8/3, ρ=28",
+            "Atractor de Clifford (Caos 2D)": "Parámetros Estándar: a=-1.4, b=1.6, c=1.0, d=0.7",
             "Geometría Sagrada (Fractales IFS)": "Restricción Contractiva: det(A_i) < 1",
             "Red Neuronal Rápida (CPPN)": "Espacio Latente (Z): Normalizado entre -1.0 y 1.0"
         }
@@ -510,7 +616,10 @@ elif menu == "🧪 Laboratorio de Física":
         st.markdown("- Renderizado: God Mode V2 (Numba + Multi-Threading)")
         
     if st.button("🔬 Iniciar Simulación de Laboratorio", type="primary"):
-        from render.stable.render_standard import generar_animacion_god_mode
+        st.info("Laboratorio Puro de Sistemas Complejos: Evaluando Ecuación en Derivadas Parciales (Determinista)...")
+        
+        # Desacople total: Importar el simulador puro en lugar del motor audiovisual
+        from render.stable.render_laboratorio import simular_laboratorio_puro
         import os
         
         temp_video_lab = "temp_lab_simulation.mp4"
@@ -524,38 +633,34 @@ elif menu == "🧪 Laboratorio de Física":
         elif motor_lab == "Allen-Cahn / Ohta-Kawasaki (Burbujas)": lab_engines = ['CH']
         elif motor_lab == "KdV (Tsunamis)": lab_engines = ['KDV']
         elif motor_lab == "Caos 3D (Atractores de Lorenz)": lab_engines = ['lorenz']
+        elif motor_lab == "Atractor de Clifford (Caos 2D)": lab_engines = ['CLIFFORD']
         elif motor_lab == "Geometría Sagrada (Fractales IFS)": lab_engines = ['ifs']
         elif motor_lab == "Red Neuronal Rápida (CPPN)": lab_engines = ['CPPN']
         
+        engine_code = lab_engines[0] if lab_engines else 'GS'
+        
         progress_bar_lab = st.progress(0)
-        def update_progress_lab(current, total):
-            progress_bar_lab.progress(int((current / total) * 100))
+        def update_progress_lab(current, msg=""):
+            progress_bar_lab.progress(current)
             
-        with st.spinner(f"Calculando campos para {motor_lab}..."):
+        with st.spinner(f"Calculando evolución determinista para {engine_code}..."):
             try:
-                success = generar_animacion_god_mode(
-                    ruta_audio=None, # Indicador para modo de simulación pura
-                    nombre_salida_temp=temp_video_lab,
+                success = simular_laboratorio_puro(
+                    nombre_salida=temp_video_lab,
                     fps=30,
                     duracion=duracion_lab,
                     seed=seed_lab,
-                    allowed_engines=lab_engines,
-                    use_spirits=False,
-                    use_kaleido=False,
-                    use_flash=False,
-                    use_chroma=False,
-                    use_lyrics=False,
-                    global_cmap=None,
+                    engine_code=engine_code,
                     progress_callback=update_progress_lab
                 )
                 
                 if success and os.path.exists(temp_video_lab):
-                    st.success("Simulación finalizada. Renderización en alta calidad.")
+                    st.success("✅ Simulación rigurosa completada.")
                     st.video(temp_video_lab)
                 else:
-                    st.error("Hubo un fallo crítico en la simulación física.")
+                    st.error("Error al generar la simulación determinista.")
             except Exception as e:
-                st.error(f"Error en la simulación: {str(e)}")
+                st.error(f"Error Crítico Numérico: {e}")
 
 elif menu == "⚙️ Configuración":
     st.title("Configuración Global")

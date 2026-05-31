@@ -70,14 +70,16 @@ def transcribir_audio_para_edicion(audio_path, model_size="medium", max_duration
         return f"Error al transcribir el audio. Detalles técnicos: {e}"
 
 class LyricsEngine:
-    def __init__(self, audio_path, max_duration=None):
+    def __init__(self, audio_path, max_duration=None, position="Abajo"):
         """
         Inicializa el motor de lyrics.
         :param audio_path: Ruta al archivo de audio.
         :param max_duration: Si se especifica, solo procesa esta cantidad de segundos.
+        :param position: "Abajo" o "Centro".
         """
         self.audio_path = os.path.abspath(audio_path)
         self.max_duration = max_duration
+        self.position = position
         # El archivo JSON se guardará en la misma carpeta que el audio con el mismo nombre base
         self.json_path = os.path.splitext(audio_path)[0] + ".json"
         self.data = {} # Inicializar vacío para evitar NoneType error
@@ -370,16 +372,21 @@ class LyricsEngine:
             print(f"   [{s['start']:.2f}s - {s['end']:.2f}s] {s['text']}")
         print("----------------------------------------------------------\n")
 
-    def get_current_word(self, time):
+    def get_current_word_data(self, time):
         """
         Busca la palabra activa en el tiempo t.
-        Retorna el texto (str) o None.
+        Retorna el diccionario de la palabra {'text': str, 'start': float, 'end': float} o None.
         """
         # Búsqueda lineal (Suficiente para < 5000 palabras en una canción típica)
         for w in self.words:
             if w['start'] <= time <= w['end']:
-                return w['text']
+                return w
         return None
+
+    def get_current_word(self, time):
+        """Wrapper de compatibilidad."""
+        w = self.get_current_word_data(time)
+        return w['text'] if w else None
 
     def get_text_mask(self, time, resolution_xy):
         """
@@ -428,40 +435,52 @@ class LyricsEngine:
         
         return mask
 
-    def draw(self, frame, time, kick=0.0):
+    def draw(self, frame, time, kick=0.0, snare=0.0, energy=0.0):
         """
-        Dibuja la palabra actual en el frame usando OpenCV.
+        Dibuja la palabra actual en el frame usando OpenCV/Pillow con estética Cyberpunk Neón y Cromestesia.
+        Incluye posicionamiento y animaciones suaves (Fade-in).
         """
-        word = self.get_current_word(time)
-        if not word:
+        w_data = self.get_current_word_data(time)
+        if not w_data:
             return frame
+            
+        word = w_data['text']
+        start_t = w_data['start']
+        end_t = w_data['end']
             
         h, w = frame.shape[:2]
         
-        # Suavizado del bombo (EMA) para evitar saltos violentos
+        # Animación de Fade-in (Pro Lyrics)
+        duracion_palabra = end_t - start_t
+        progreso = min(max((time - start_t) / (duracion_palabra * 0.3 + 0.001), 0.0), 1.0)
+        alpha_fade = int(255 * progreso)
+        
+        # Suavizado del kick y energy para evitar saltos violentos
         if not hasattr(self, 'smoothed_kick'):
             self.smoothed_kick = 0.0
+            self.smoothed_energy = 0.0
+            
         self.smoothed_kick = self.smoothed_kick * 0.7 + kick * 0.3
+        self.smoothed_energy = self.smoothed_energy * 0.8 + energy * 0.2
         
-        # PIL ImageDraw soporta tildes y caracteres especiales (UTF-8)
-        img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        # Crear imagen con canal Alfa transparente para superposición suave
+        img_pil = Image.new("RGBA", (w, h), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img_pil)
         
-        # Tamaño base relativo a la pantalla + vibración por la música (kick suavizado)
-        base_size = h // 10
-        kick_bump = int((h // 20) * self.smoothed_kick)
+        # Tamaño dinámico reactivo al kick (latido del texto)
+        base_size = int(h * 0.08)
+        kick_bump = int((h * 0.04) * self.smoothed_kick)
         font_size = base_size + kick_bump
         
         try:
-            # Intentar usar fuentes gruesas (Impact o Arial Black)
             font = ImageFont.truetype("impact.ttf", font_size)
         except IOError:
             try:
                 font = ImageFont.truetype("ariblk.ttf", font_size)
             except IOError:
                 try:
-                    font = ImageFont.truetype("arial.ttf", font_size)
-                except IOError:
+                    font = ImageFont.truetype("arialbd.ttf", font_size)
+                except:
                     font = ImageFont.load_default()
             
         try:
@@ -470,24 +489,46 @@ class LyricsEngine:
         except AttributeError:
             text_w, text_h = draw.textsize(word, font=font)
         
-        # Centrado en el tercio inferior de la pantalla para no tapar la física principal
+        # Posicionamiento (Abajo vs Centro)
         x = (w - text_w) // 2
-        y = int(h * 0.75) - (text_h // 2)
+        if self.position == "Centro":
+            y = (h - text_h) // 2
+        else:
+            y = int(h * 0.80) - (text_h // 2)
         
-        # Sombra paralela suave (Drop Shadow)
-        shadow_offset = max(2, font_size // 15)
-        # Dibujar sombra (varias capas para simular blur)
-        for ox in range(0, shadow_offset + 1, 2):
-            for oy in range(0, shadow_offset + 1, 2):
-                if ox > 0 or oy > 0:
-                    draw.text((x + ox, y + oy), word, font=font, fill=(0, 0, 0))
+        # --- CROMESTESIA Y ESTÉTICA CYBERPUNK ---
+        # Aberración Cromática ligada a la energía del audio
+        glitch_offset = int((w * 0.01) * self.smoothed_energy) + 2
         
-        # Texto principal brillante (Cian/Neón)
-        # El color puede reaccionar a la energía
-        r = int(100 + self.smoothed_kick * 155)
-        g = 255
-        b = int(200 + self.smoothed_kick * 55)
-        draw.text((x, y), word, font=font, fill=(r, g, b))
+        # Colores reactivos: Cyan y Magenta base
+        cyan_color = (0, 255, int(200 + 55 * self.smoothed_kick), alpha_fade)
+        magenta_color = (int(200 + 55 * self.smoothed_kick), 0, 255, alpha_fade)
+        blanco_core = (255, 255, 255, alpha_fade)
         
-        frame = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+        # Sombra paralela / Glow difuso
+        shadow_offset = max(2, font_size // 12)
+        glow_intensity = int((100 + 155 * self.smoothed_energy) * progreso)
+        cyan_glow = (cyan_color[0], cyan_color[1], cyan_color[2], glow_intensity)
+        magenta_glow = (magenta_color[0], magenta_color[1], magenta_color[2], glow_intensity)
+        
+        # Dibujar Aberración Cromática (Glow expansivo)
+        for ox in range(-shadow_offset, shadow_offset + 1, 2):
+            for oy in range(-shadow_offset, shadow_offset + 1, 2):
+                if ox != 0 or oy != 0:
+                    draw.text((x + ox - glitch_offset, y + oy), word, font=font, fill=cyan_glow)
+                    draw.text((x + ox + glitch_offset, y + oy), word, font=font, fill=magenta_glow)
+        
+        # Glitch Offset (Rojo y Azul duros)
+        draw.text((x - glitch_offset, y), word, font=font, fill=cyan_color)
+        draw.text((x + glitch_offset, y), word, font=font, fill=magenta_color)
+        
+        # Core text
+        draw.text((x, y), word, font=font, fill=blanco_core)
+        
+        # Convertir a numpy RGBA y mezclar (Alpha Compositing)
+        img_np = np.array(img_pil)
+        alpha = img_np[:, :, 3] / 255.0
+        for c in range(3):
+            frame[:, :, c] = frame[:, :, c] * (1.0 - alpha) + img_np[:, :, c] * alpha
+            
         return frame

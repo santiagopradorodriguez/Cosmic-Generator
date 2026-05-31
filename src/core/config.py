@@ -22,6 +22,22 @@ NOTE_PALETTE = [
     (255, 255, 0)   # B (Si) - Cian/Celeste
 ]
 
+# Paleta Sinestésica Global (Envolvente de la Canción entera)
+GLOBAL_MOOD_PALETTES = {
+    0: 'inferno',          # C (Do) - Rojo/Fuego (Acción, Energía)
+    1: 'plasma',           # C# - Púrpura (Misterio)
+    2: 'Wistia',           # D (Re) - Amarillo (Otoño, Alegría, Nostalgia)
+    3: 'twilight',         # D# - Oliva/Dorado Oscuro
+    4: 'copper',           # E (Mi) - Dorado (Épico, Brillante)
+    5: 'afmhot',           # F (Fa) - Marrón/Tierra (Melancolía, Raíces)
+    6: 'twilight_shifted', # F# - Naranja Intenso
+    7: 'ocean',            # G (Sol) - Azul/Agua (Paz, Fluidez)
+    8: 'seismic',          # G# - Violeta/Contraste
+    9: 'viridis',          # A (La) - Verde (Naturaleza, Bosque)
+    10: 'YlGnBu',          # A# - Verde Azulado
+    11: 'winter'           # B (Si) - Cian/Hielo (Cristalino, Frío)
+}
+
 # Definición de Actos Visuales
 ACTOS = [
     {'engine': 'GS',   'cmap': 'magma',         'kaleido': False, 'p1': 0.055, 'p2': 0.062},
@@ -55,5 +71,6 @@ ACTOS = [
     {'engine': 'GS',   'cmap': 'magma',         'kaleido': False, 'p1': 0.055, 'p2': 0.062},
     {'engine': 'WAVE', 'cmap': 'ocean',         'kaleido': False, 'p1': 0.99,  'p2': 0.01},
     {'engine': 'KDV',  'cmap': 'viridis',       'kaleido': True,  'p1': 1.0,   'p2': 0.5},
-    {'engine': 'CPPN', 'cmap': 'hsv',           'kaleido': True,  'p1': 0.5,   'p2': 0.5}
+    {'engine': 'CPPN', 'cmap': 'hsv',           'kaleido': True,  'p1': 0.5,   'p2': 0.5},
+    {'engine': 'CLIFFORD', 'cmap': 'plasma',    'kaleido': False, 'p1': 1.0,   'p2': 1.0}
 ]

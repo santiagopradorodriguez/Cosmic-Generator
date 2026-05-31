@@ -31,11 +31,11 @@ def run_tests():
                 progress_callback=None
             )
             if success:
-                print(f"✅ {motor} OK - Tiempo: {time.time()-start:.2f}s")
+                print(f"[OK] {motor} - Tiempo: {time.time()-start:.2f}s")
             else:
-                print(f"❌ {motor} FAIL - Fallo interno.")
+                print(f"[FAIL] {motor} - Fallo interno.")
         except Exception as e:
-            print(f"❌ {motor} CRASH: {e}")
+            print(f"[CRASH] {motor}: {e}")
 
 if __name__ == "__main__":
     run_tests()

@@ -122,42 +122,72 @@ def generar_montaje_ia(audio_path, duration_arg=None, clips_dir_arg=None, output
         return
 
     # 3. Crear Edición
-    if progress_callback: progress_callback(50, "Calculando cortes y emparejando clips...")
-    print("✂️ Calculando cortes basados en el ritmo...")
+    if progress_callback: progress_callback(50, "Calculando ritmo y pacing (AI Director)...")
+    print("✂️ IA evaluando pacing según curva de energía...")
     final_clips = []
     
-    # Estrategia: Cambiar de clip cada 4 beats (aprox 1 compás)
-    beats_per_cut = 4
+    # Estrategia Cinematográfica Dinámica: IA evalúa pacing según curva de energía
     if len(beat_times) > 0:
-        cut_points = list(beat_times[::beats_per_cut])
+        rms_full = librosa.feature.rms(y=y)[0]
+        rms_mean = np.mean(rms_full)
+        rms_std = np.std(rms_full)
+        high_energy_threshold = rms_mean + (rms_std * 0.5)
+        low_energy_threshold = max(0, rms_mean - (rms_std * 0.5))
+
+        times_rms = librosa.frames_to_time(np.arange(len(rms_full)), sr=sr)
+        
+        cut_points = [0.0]
+        current_beat_idx = 0
+        
+        while current_beat_idx < len(beat_times):
+            t = beat_times[current_beat_idx]
+            if t <= cut_points[-1]:
+                current_beat_idx += 1
+                continue
+                
+            idx = np.argmin(np.abs(times_rms - t))
+            current_energy = rms_full[idx]
+            
+            # Pacing dinámico:
+            if current_energy > high_energy_threshold:
+                step = random.choice([1, 2]) # Cortes muy rápidos en climax
+            elif current_energy > low_energy_threshold:
+                step = random.choice([2, 4]) # Cortes medios
+            else:
+                step = random.choice([4, 8]) # Cortes lentos en calma
+                
+            current_beat_idx += step
+            if current_beat_idx < len(beat_times):
+                cut_points.append(beat_times[current_beat_idx])
+                
         if cut_points[-1] < duration_audio:
             cut_points.append(duration_audio)
     else:
         cut_points = np.arange(0, duration_audio, 2.0)
 
     last_t = 0
-    for t in cut_points:
+    for i, t in enumerate(cut_points):
         if t <= last_t: continue
         seg_len = t - last_t
         
         # --- SELECCIÓN INTELIGENTE ---
-        # 1. Calcular energía del audio en este segmento
         start_sample = int(last_t * sr)
         end_sample = int(t * sr)
         if end_sample > start_sample:
             segment = y[start_sample:end_sample]
             rms = np.mean(librosa.feature.rms(y=segment))
-            # Normalizar RMS (asumiendo un max típico de 0.3-0.5)
             audio_energy = np.clip(rms * 4.0, 0.0, 1.0)
         else:
             audio_energy = 0.5
             
-        # 2. Buscar el video que tenga una energía visual similar
-        # Ordenamos los clips por qué tan cerca está su energía de la del audio
         clip_data.sort(key=lambda x: abs(x['score'] - audio_energy))
         
-        # Elegimos uno de los 3 mejores (para mantener variedad y no repetir siempre el mismo)
-        best_candidates = clip_data[:3]
+        # Cortes muy rápidos buscan más caos visual
+        if seg_len < 1.0:
+            best_candidates = sorted(clip_data, key=lambda x: x['score'], reverse=True)[:3]
+        else:
+            best_candidates = clip_data[:3]
+            
         chosen_data = random.choice(best_candidates)
         
         try:
@@ -165,12 +195,18 @@ def generar_montaje_ia(audio_path, duration_arg=None, clips_dir_arg=None, output
         except:
             continue
         
-        # Tomar un fragmento aleatorio del clip
         if clip.duration > seg_len:
             start = random.uniform(0, clip.duration - seg_len)
             sub = safe_subclip(clip, start, start + seg_len)
         else:
             sub = safe_subclip(clip, 0, clip.duration)
+            
+        # VFX de Cyberpunk / High Energy Contrast Flash
+        if audio_energy > 0.8 and seg_len < 1.0:
+            try:
+                if hasattr(vfx, 'colorx'):
+                    sub = sub.fx(vfx.colorx, 1.2) # Harder contrast for action
+            except: pass
             
         final_clips.append(sub)
         last_t = t
@@ -192,58 +228,66 @@ def generar_montaje_ia(audio_path, duration_arg=None, clips_dir_arg=None, output
             subtitle_clips = [final_video] # La base es el video montado
             W, H = final_video.size
             
-            # Función auxiliar para crear imagen de texto ÉPICO
+            # Función auxiliar para crear imagen de texto ÉPICO ESTILO CYBERPUNK
             def create_epic_text_image(text, w, h):
-                # Lienzo transparente
                 img = Image.new('RGBA', (w, h), (0,0,0,0))
-                
-                # 1. Configurar fuente (Más pequeña para que quepa: 5% altura)
-                fontsize = int(h * 0.05) 
+                fontsize = int(h * 0.06) 
                 try:
-                    font = ImageFont.truetype("arialbd.ttf", fontsize)
+                    font = ImageFont.truetype("impact.ttf", fontsize)
                 except:
                     try:
-                        font = ImageFont.truetype("arial.ttf", fontsize)
+                        font = ImageFont.truetype("arialbd.ttf", fontsize)
                     except:
                         font = ImageFont.load_default()
                 
-                # 2. Ajuste de línea (Word Wrap)
-                # Calculamos cuántos caracteres caben aprox (ancho / tamaño fuente * factor ajuste)
                 avg_char_width = fontsize * 0.6
                 chars_per_line = int((w * 0.8) / avg_char_width)
                 lines = textwrap.wrap(text, width=chars_per_line)
                 
-                # Calcular altura total del bloque de texto
                 line_height = fontsize * 1.2
                 total_text_h = len(lines) * line_height
-                start_y = (h - total_text_h) // 2 # Centrado verticalmente
+                start_y = (h - total_text_h) // 2 
                 
-                draw = ImageDraw.Draw(img)
+                # Capas para Aberración Cromática (Glitch)
+                img_cyan = Image.new('RGBA', (w, h), (0,0,0,0))
+                img_magenta = Image.new('RGBA', (w, h), (0,0,0,0))
+                img_core = Image.new('RGBA', (w, h), (0,0,0,0))
                 
-                # 3. Dibujar cada línea
+                d_cyan = ImageDraw.Draw(img_cyan)
+                d_magenta = ImageDraw.Draw(img_magenta)
+                d_core = ImageDraw.Draw(img_core)
+                
+                offset_x = max(2, int(w * 0.003))
+                offset_y = max(1, int(h * 0.002))
+                
                 for i, line in enumerate(lines):
-                    # Calcular ancho de esta línea para centrarla
-                    bbox = draw.textbbox((0,0), line, font=font)
-                    line_w = bbox[2] - bbox[0]
+                    try:
+                        bbox = d_core.textbbox((0,0), line, font=font)
+                        line_w = bbox[2] - bbox[0]
+                    except:
+                        line_w = d_core.textsize(line, font=font)[0]
+                        
                     line_x = (w - line_w) // 2
                     line_y = start_y + i * line_height
                     
-                    # --- EFECTO GLOW (Resplandor) ---
-                    # Dibujamos varias veces con offset y transparencia para simular brillo
-                    glow_range = 4
-                    for ox in range(-glow_range, glow_range+1, 2):
-                        for oy in range(-glow_range, glow_range+1, 2):
-                            draw.text((line_x+ox, line_y+oy), line, font=font, fill=(0, 255, 255, 50)) # Cyan transparente
+                    # --- EFECTO GLOW CYBERPUNK ---
+                    glow_range = max(3, int(h * 0.01))
+                    glow_alpha = 40
+                    for ox in range(-glow_range, glow_range+1, 3):
+                        for oy in range(-glow_range, glow_range+1, 3):
+                            d_cyan.text((line_x+ox, line_y+oy), line, font=font, fill=(0, 255, 255, glow_alpha))
+                            d_magenta.text((line_x+ox, line_y+oy), line, font=font, fill=(255, 0, 255, glow_alpha))
 
-                    # --- BORDE NEGRO (Outline) ---
-                    stroke_w = 4
-                    draw.text((line_x, line_y), line, font=font, fill='white', stroke_width=stroke_w, stroke_fill='black')
+                    # --- ABERRACIÓN CROMÁTICA ---
+                    d_cyan.text((line_x - offset_x, line_y + offset_y), line, font=font, fill=(0, 255, 255, 220))
+                    d_magenta.text((line_x + offset_x, line_y - offset_y), line, font=font, fill=(255, 0, 255, 220))
                     
-                    # --- TEXTO PRINCIPAL ---
-                    draw.text((line_x, line_y), line, font=font, fill='white')
+                    # --- CORE BLANCO ---
+                    d_core.text((line_x, line_y), line, font=font, fill=(255, 255, 255, 255))
                 
-                # Aplicar un ligero desenfoque al canal alpha para suavizar bordes si se desea (opcional)
-                # img = img.filter(ImageFilter.SMOOTH)
+                img = Image.alpha_composite(img, img_cyan)
+                img = Image.alpha_composite(img, img_magenta)
+                img = Image.alpha_composite(img, img_core)
                 
                 return np.array(img)
 

@@ -94,8 +94,9 @@ class MotorFX:
         
         final_glow = cv2.resize(mix1, (w, h), interpolation=cv2.INTER_LINEAR)
         
-        # 4. Mezcla aditiva con el frame original
-        return cv2.addWeighted(img, 1.0, final_glow, intensity, 0)
+        # 4. Mezcla aditiva con el frame original (Intensidad suavizada para evitar quemado radiactivo)
+        safe_intensity = intensity * 0.4 # Reducción drástica del bloom
+        return cv2.addWeighted(img, 1.0, final_glow, safe_intensity, 0)
 
     def melting_world_fisheye(self, frame, kick_intensity):
         """
@@ -259,12 +260,46 @@ class MotorFX:
         
         prev_warped = cv2.warpAffine(self.prev_frame, M, (w, h), borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
         
-        # Blur ligero para que la estela de plasma se disipe orgánicamente
-        prev_warped = cv2.GaussianBlur(prev_warped, (3, 3), 0)
+        # Acumulación pura HDR sin límite de 255. La luz puede llegar a infinitos teóricos.
+        # El decay geométrico controla que el límite superior converja.
+        blend = cv2.addWeighted(curr_32, 1.0, prev_warped, decay, 0)
+        self.prev_frame = blend  # Conservamos float32 para el siguiente frame
         
-        # Screen / Additive blend
-        self.prev_frame = cv2.addWeighted(curr_32, 1.0, prev_warped, decay, 0)
-        return np.clip(self.prev_frame, 0, 255).astype(np.uint8)
+        # --- LUMA TONE MAPPING HDR ---
+        # 1. Extraer canales (Opencv usa BGR por defecto)
+        b, g, r = cv2.split(blend)
+        
+        # 2. Calcular Luminancia (Luma = 0.299*R + 0.587*G + 0.114*B)
+        L = 0.114 * b + 0.587 * g + 0.299 * r
+        L_safe = np.maximum(L, 1e-5) # Prevenir división por cero
+        
+        # 3. Aplicar Reinhard HDR SOLO a la matriz Luma
+        kappa = 255.0  # Punto de semi-saturación
+        L_mapped = L_safe / (L_safe + kappa)
+        
+        # 4. Escalar los canales BGR originales por el ratio de compresión Luma
+        # Esto preserva el 'True Neon Glow' (la saturación original) sin que converja a blanco
+        ratio = (L_mapped * 260.0) / L_safe # Multiplicamos por 260 para mantener intensidad de brillo
+        
+        b_mapped = b * ratio
+        g_mapped = g * ratio
+        r_mapped = r * ratio
+        
+        # Reensamblar canales y clipear suavemente
+        out_frame = cv2.merge((b_mapped, g_mapped, r_mapped))
+        out_frame = np.clip(out_frame, 0, 255).astype(np.uint8)
+        return out_frame
+
+    def aplicar_vhs_noise(self, img, intensity=0.2):
+        """Añade ruido analógico sutil para evitar la crudeza digital pura."""
+        if intensity <= 0: return img
+        # Ruido de baja frecuencia (escala reducida y muy difuminada)
+        h, w = img.shape[:2]
+        noise_w, noise_h = max(w // 4, 1), max(h // 4, 1)
+        noise = np.random.randint(-15, 15, (noise_h, noise_w, 3), dtype=np.int16) * intensity
+        noise = cv2.resize(noise, (w, h), interpolation=cv2.INTER_CUBIC)
+        noisy = np.clip(img.astype(np.int16) + noise, 0, 255).astype(np.uint8)
+        return cv2.GaussianBlur(noisy, (5, 5), 0)
 
     def shift_hue(self, img, shift_amount):
         """Rota los colores de la imagen (Ciclo HSV)."""

@@ -56,12 +56,22 @@ class CPPNEngine:
         return np.exp(-(x**2))
 
     def _step_lorenz(self, dt=0.01):
-        x, y, z = self.lorenz_state
+        # Resolver inestabilidad de Euler mediante sub-pasos dinámicos
+        num_steps = int(max(1, dt / 0.005))
+        sub_dt = dt / num_steps
+        
         sigma, rho, beta = 10.0, 28.0, 8.0/3.0
-        dx = sigma * (y - x) * dt
-        dy = (x * (rho - z) - y) * dt
-        dz = (x * y - beta * z) * dt
-        self.lorenz_state += np.array([dx, dy, dz])
+        
+        for _ in range(num_steps):
+            x, y, z = self.lorenz_state
+            dx = sigma * (y - x) * sub_dt
+            dy = (x * (rho - z) - y) * sub_dt
+            dz = (x * y - beta * z) * sub_dt
+            self.lorenz_state += np.array([dx, dy, dz])
+            
+            # Clip de seguridad hiper-estricto para evitar Overflow/NaN en la Red Neuronal
+            self.lorenz_state = np.clip(self.lorenz_state, -100.0, 100.0)
+            
         return self.lorenz_state / 20.0 # Normalizado a un rango latente estable
 
     def generate_frame(self, time_t, audio_z):

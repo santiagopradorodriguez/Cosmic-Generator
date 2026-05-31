@@ -26,6 +26,7 @@ from core.nucleo_visual import (
     simulacion_ondas,
     simulacion_ohta_kawasaki,
     simulacion_kdv,
+    simulacion_ifs,
     update_particles
 )
 from core.nucleo_neural import CPPNEngine
@@ -33,7 +34,24 @@ from core.nucleo_neural import CPPNEngine
 # Configuración FFmpeg
 plt.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
 
-def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=None, seed=None, allowed_engines=None, use_spirits=True, use_kaleido=True, use_flash=True, use_chroma=False, use_lyrics=False, global_cmap=None, progress_callback=None):
+def generar_animacion_god_mode(
+    ruta_audio, 
+    nombre_salida_temp, 
+    fps=30, 
+    duracion=None, 
+    seed=None, 
+    allowed_engines=None, 
+    use_spirits=True, 
+    use_kaleido=True, 
+    use_flash=True, 
+    use_chroma=False, 
+    use_lyrics=False, 
+    lyrics_pos="Abajo", 
+    use_stems=False, 
+    stem_folder=None, 
+    global_cmap=None, 
+    progress_callback=None
+):
     """
     Función principal encargada de renderizar la animación visual reactiva al audio utilizando múltiples motores físicos.
 
@@ -65,6 +83,12 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
         Activa la cromestesia: teñir o influenciar los colores del fondo usando una paleta asignada a la nota predominante. Valor por defecto: False.
     use_lyrics : bool, opcional
         Determina si se superpondrán letras sincronizadas sobre el video, extraídas vía Stable-TS u otro motor. Valor por defecto: False.
+    lyrics_pos : str, opcional
+        Posición de la letra en pantalla ("Abajo" o "Centro"). Valor por defecto: "Abajo".
+    use_stems : bool, opcional
+        Si es True, intentará leer las pistas separadas por IA para modular independientemente cada parámetro físico.
+    stem_folder : str, opcional
+        Ruta a la carpeta que contiene los archivos drums.wav, bass.wav, etc. si use_stems es True.
     global_cmap : str, opcional
         Nombre de un colormap de matplotlib (ej. 'viridis', 'magma') que forzará una paleta global, ignorando las de la escena. Valor por defecto: None.
     progress_callback : callable, opcional
@@ -94,9 +118,28 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
         }
         use_lyrics = False
     else:
-        audio_data = analizar_audio(ruta_audio, fps, duracion)
-        if not audio_data:
-            return False
+        if use_stems and stem_folder and os.path.exists(stem_folder):
+            from audio.audio_analyzer import analizar_stems
+            audio_data = analizar_stems(stem_folder, fps, duracion)
+            if not audio_data:
+                print("Fallback: Error al cargar stems, volviendo a análisis mono-pista...")
+                from audio.audio_analyzer import analizar_audio
+                audio_data = analizar_audio(ruta_audio, fps, duracion)
+        else:
+            from audio.audio_analyzer import analizar_audio
+            audio_data = analizar_audio(ruta_audio, fps, duracion)
+            
+    if not audio_data:
+        return False
+        
+    # --- SINERGIA CROMÁTICA GLOBAL ---
+    # Si la Cromestesia está activada y no se forzó un mapa manualmente, 
+    # la Tonalidad Reina dictará la paleta de toda la canción.
+    if use_chroma and 'global_note' in audio_data and global_cmap is None:
+        from core.config import GLOBAL_MOOD_PALETTES
+        global_note = audio_data['global_note']
+        global_cmap = GLOBAL_MOOD_PALETTES.get(global_note, 'viridis')
+        print(f"[CROMESTESIA GLOBAL] Tonalidad Reina detectada: {global_note}. Forzando Paleta Sinestésica: {global_cmap}")
     
     total_frames = audio_data['total_frames']
 
@@ -110,7 +153,7 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
         try:
             from audio.motor_lyrics import LyricsEngine
             print("Inicializando Motor de Lyrics (Stable-TS)...")
-            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion)
+            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion, position=lyrics_pos)
         except Exception as e:
             print(f"Advertencia: Error cargando LyricsEngine: {e}")
 
@@ -174,6 +217,11 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
     # 7. KdV (Solitones) - NUEVO
     kdv_u = np.zeros((gs_h, gs_w), dtype=np.float32)
     kdv_u_next = np.zeros_like(kdv_u)
+    
+    # 8. Caos 3D y Fractales IFS - NUEVO
+    lorenz_u = np.zeros((gs_h, gs_w), dtype=np.float32)
+    lorenz_parts = np.random.uniform(-20, 20, (100000, 3)).astype(np.float32)
+    ifs_grid = np.zeros((gs_h, gs_w), dtype=np.float32)
 
     # --- INICIALIZAR NUEVOS ELEMENTOS (OPENCV PURO) ---
     lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=3) # MOD: Max 3
@@ -223,24 +271,28 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
                 # 1. Plasma Melt Feedback (Derretimiento Orgánico)
                 frame_final = fx.plasma_melt_feedback(frame_final, decay=0.85 + (harm * 0.1), kick=kick)
                 
-                # 2. Cámara Virtual (Movimiento)
+                # 2. Ruido Analógico VHS Cósmico (Plasma texturizado)
+                if textura > 0.5:
+                    frame_final = fx.aplicar_vhs_noise(frame_final, intensity=textura)
+                    
+                # 3. Cámara Virtual (Movimiento)
                 camara.update(energy=harm, kick=kick, snare=kick)
                 if cymbals_val > 0.6 or kick > 0.75:
                     camara.angle += 0.2 * (1 if i % 20 < 10 else -1)
                 frame_final = camara.aplicar(frame_final)
                 
-                # 3. Lyrics Overlay
-                if lyrics_engine and use_lyrics_local:
-                    tiempo_actual = i / float(fps)
-                    frame_final = lyrics_engine.draw(frame_final, tiempo_actual, kick=kick)
-                    
-                # 4. Bloom, God Rays y Aberración Cromática
+                # 4. Bloom, God Rays y Aberración Cromática (Glow de fondo)
                 if use_flash_local:
                     frame_final = fx.aplicar_bloom(frame_final, intensity=0.5 + (kick * 1.5), threshold=160)
                     frame_final = fx.apply_god_rays(frame_final, intensity=kick * 2.0, threshold=180)
                     frame_final = fx.aberracion_cromatica(frame_final, strength=5.0 + kick * 15 + textura * 15)
                     
-                # 5. Marca de agua
+                # 5. Lyrics Overlay (Encima de todo para no ser destruido por el Bloom)
+                if lyrics_engine and use_lyrics_local:
+                    tiempo_actual = i / float(fps)
+                    frame_final = lyrics_engine.draw(frame_final, tiempo_actual, kick=kick)
+                    
+                # 6. Marca de agua
                 es_freemium = True
                 if es_freemium:
                     wm_text = "Generated by Cosmic Generator V2"
@@ -292,12 +344,25 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             if progress_callback:
                 progress_callback(i, total_frames)
 
-            # --- DATOS DE AUDIO ---
+            # --- DATOS DE AUDIO (Master Fallbacks) ---
             kick = audio_data['rms_perc'][i] if i < len(audio_data['rms_perc']) else 0
             harm = audio_data['rms_harm'][i] if i < len(audio_data['rms_harm']) else 0
             nota = audio_data['dom_note'][i] if i < len(audio_data['dom_note']) else 0
             textura = audio_data['contrast_mean'][i] if i < len(audio_data['contrast_mean']) else 0
             cymbals_val = audio_data['cymbals'][i] if i < len(audio_data['cymbals']) else 0
+            
+            # --- SINESTESIA MULTI-STEM (NUEVO FASE 14) ---
+            if 'stems' in audio_data:
+                drums_onsets = audio_data['stems']['drums_onsets'][i] if i < len(audio_data['stems']['drums_onsets']) else 0
+                bass_rms = audio_data['stems']['bass_rms'][i] if i < len(audio_data['stems']['bass_rms']) else 0
+                vocals_rms = audio_data['stems']['vocals_rms'][i] if i < len(audio_data['stems']['vocals_rms']) else 0
+                other_cent = audio_data['stems']['other_cent'][i] if i < len(audio_data['stems']['other_cent']) else 0
+                
+                # Ruteo específico de instrumentos a fuerzas físicas:
+                kick = drums_onsets      # Batería controla flash, aberración cromática y partículas caóticas
+                harm = vocals_rms        # Voces controlan intensidad luminosa base y aparición de letras
+                textura = bass_rms       # Bajo controla viscosidad, grosor del plasma y gravedad
+                cymbals_val = other_cent # Sintetizadores/Pads controlan rotación fractal y vórtices
             
             # Sanitización extra para la nota (asegurar rango 0-11)
             nota = int(nota) % 12
@@ -313,12 +378,16 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             escena = local_actos[idx_acto]
 
             # MOD: Aleatoriedad al cambiar de escena
-            if idx_acto != prev_idx_acto:
+            # MOD: Aleatoriedad al cambiar de escena y configuración inicial
+            if i == 0 or idx_acto != prev_idx_acto:
                 prev_idx_acto = idx_acto
                 # Solo activar Lorenz/IFS si están permitidos
                 use_lorenz = ('lorenz' in allowed_engines) if allowed_engines else True
                 use_geometry = ('ifs' in allowed_engines) if allowed_engines else True
-                scene_flags['lorenz'] = (np.random.rand() < 0.3) and use_lorenz
+                
+                chance_lorenz = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'lorenz' in allowed_engines) else 0.3
+                
+                scene_flags['lorenz'] = (np.random.rand() < chance_lorenz) and use_lorenz
                 scene_flags['leaves'] = np.random.rand() < 0.3
                 scene_flags['superforma'] = (np.random.rand() < 0.4) and use_geometry
             
@@ -486,6 +555,50 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
                     p_pos = np.nan_to_num(p_pos, nan=gs_w/2)
                     p_vel = np.nan_to_num(p_vel, nan=0.0)
 
+            elif escena['engine'] == 'CLIFFORD':
+                # Simulación 2D Pura: Atractor Caótico de Clifford
+                # Es un mapeo discreto 2D que genera patrones fractales espectaculares.
+                a, b, c, d = -1.4, 1.6, 1.0, 0.7 # Parámetros estándar de Clifford
+                
+                # Perturbación con el audio
+                a += kick * 0.1
+                b -= harm * 0.1
+                
+                # p_pos actúa como el estado (x,y) normalizado de -2 a 2
+                x_idx = np.clip(p_pos[:, 0].astype(int), 0, gs_w-1)
+                y_idx = np.clip(p_pos[:, 1].astype(int), 0, gs_h-1)
+                
+                # Renderizar densidad tipo llama (Flame Fractal)
+                lorenz_u *= 0.85 # Decay para rastro 2D
+                np.add.at(lorenz_u, (y_idx, x_idx), 1.0)
+                
+                img_norm = np.log1p(lorenz_u)
+                img_norm /= (np.max(img_norm) + 1e-6)
+                
+            elif escena['engine'] == 'ifs':
+                # Geometría Sagrada (Fractales Iterated Function System)
+                angle = i * 0.05 + (cymbals_val * 2.0)
+                cos_a, sin_a = np.cos(angle), np.sin(angle)
+                
+                # Fractales mutantes (Transformaciones afines base Helecho/Sierpinski)
+                transform_matrix = np.array([
+                    [0.0, 0.0, 0.0, 0.16 + harm*0.1, 0.0, 0.0],
+                    [0.85*cos_a, -0.04, 0.04, 0.85*sin_a, 0.0, 1.6 + kick],
+                    [0.2, -0.26, 0.23, 0.22, 0.0, 1.6 - textura],
+                    [-0.15, 0.28, 0.26, 0.24, 0.0, 0.44]
+                ], dtype=np.float32)
+                
+                prob = np.array([0.01, 0.85, 0.07, 0.07], dtype=np.float32)
+                
+                ifs_grid *= (0.7 + textura * 0.2) # Decay dinámico
+                
+                iters = 20000 + int(kick * 50000)
+                simulacion_ifs(ifs_grid, iters, transform_matrix, prob, cx=gs_w/8, cy=gs_h/8)
+                
+                img_norm = np.log1p(ifs_grid)
+                img_norm = (img_norm - np.min(img_norm)) / (np.max(img_norm) - np.min(img_norm) + 1e-6)
+
+            if escena['engine'] == 'PARTICLES':
                 # Dibujar partículas en img_norm
                 img_norm = np.zeros((gs_h, gs_w), dtype=np.float32)
                 for pi in range(num_particles):
@@ -511,18 +624,6 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             hue_accumulator += 0.5 + (harm * 5.0)
             bg_layer = fx_producer.shift_hue(bg_layer, int(hue_accumulator))
             
-            # --- SINESTESIA DE COLOR (CROMESTESIA) ---
-            # Teñir la escena sutilmente con el color de la nota musical actual
-            target_color_bgr = NOTE_PALETTE[nota] # Se usa para espíritus y hojas también
-            
-            if use_chroma:
-                # Crear una capa sólida del color de la nota
-                color_layer = np.full_like(bg_layer, target_color_bgr)
-                
-                # Mezclar: Cuanto más fuerte la armonía, más se nota el color de la nota
-                blend_factor = 0.05 + (harm * 0.25) # Reducido: Entre 5% y 30% (antes saturaba mucho)
-                bg_layer = cv2.addWeighted(bg_layer, 1.0 - blend_factor, color_layer, blend_factor, 0)
-            
             # --- EFECTO CALEIDOSCOPIO (MANDALA) ---
             if 'kaleido' in escena and escena['kaleido'] and use_kaleido:
                 bg_layer = fx_producer.kaleidoscopio(bg_layer, active=escena['kaleido'])
@@ -540,6 +641,8 @@ def generar_animacion_god_mode(ruta_audio, nombre_salida_temp, fps=30, duracion=
             # 1. Lorenz Swarm (Sigue a los platillos)
             dt_lorenz = 0.005
             lorenz_swarm.update(overlay_layer, dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'])
+            # Extraer color dominante de la nota actual para las capas superiores
+            target_color_bgr = NOTE_PALETTE[nota]
             
             # 2. Generador de Hojas
             if scene_flags['leaves']:
