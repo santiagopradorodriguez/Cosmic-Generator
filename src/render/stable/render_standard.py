@@ -679,22 +679,11 @@ def generar_animacion_god_mode(
             # Aplicar suave resplandor (Neon Glow) al overlay
             overlay_layer = cv2.GaussianBlur(overlay_layer, (3, 3), 0)
             
-            # Crear máscara Alpha realista basada en la luminosidad del overlay
-            overlay_gray = cv2.cvtColor(overlay_layer, cv2.COLOR_BGR2GRAY)
-            _, alpha_mask = cv2.threshold(overlay_gray, 5, 255, cv2.THRESH_BINARY)
-            alpha_mask = cv2.GaussianBlur(alpha_mask, (7, 7), 0) # Suavizar bordes
-           
             # ============================
             # COMPOSICIÓN (Blending)
             # ============================
-            # Normalizar alpha a 0.0 - 1.0
-            alpha_3c = cv2.merge([alpha_mask, alpha_mask, alpha_mask]).astype(np.float32) / 255.0
-            
-            # FIX BLENDING: cv2.addWeighted puro no recorta la luz ni ahoga la física.
-            fg = overlay_layer.astype(np.float32)
-            bg = bg_layer.astype(np.float32)
-            # Aplicar overlay mediante máxima luminosidad para evitar oscurecer
-            frame_final = np.maximum(fg * alpha_3c, bg).astype(np.uint8)
+            # FIX BLENDING: Usar Additive Blending puro para no perder pixeles brillantes (Adiós a las pantallas negras)
+            frame_final = cv2.add(bg_layer, overlay_layer)
 
             # --- POST-PROCESADO (FASE 12: Melting World & Fractales) ---
             # 1.1 Melting World (Fisheye Distortion Sub-Bass)
