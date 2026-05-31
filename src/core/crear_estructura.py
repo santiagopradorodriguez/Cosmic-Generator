@@ -1,3 +1,4 @@
+# (C) Rebeldía Cósmica | Creado por Santiago Prado
 import os
 
 # Asegurar que la carpeta src existe

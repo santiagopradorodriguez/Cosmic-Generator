@@ -1,3 +1,4 @@
+# (C) Rebeldía Cósmica | Creado por Santiago Prado
 import numpy as np
 import cv2
 
@@ -130,8 +131,9 @@ def simulacion_gpe(psi_real, psi_imag, out_r, out_i, V, g, dt):
             H_real = -0.5 * lap_r + potencial * psi_real[r, c]
             H_imag = -0.5 * lap_i + potencial * psi_imag[r, c]
             
-            nr = psi_real[r, c] + H_imag * dt
-            ni = psi_imag[r, c] - H_real * dt
+            # Clamping suave de la fase para evitar explosión numérica en Euler Explícito
+            nr = psi_real[r, c] + np.tanh(H_imag * dt)
+            ni = psi_imag[r, c] - np.tanh(H_real * dt)
             
             out_r[r, c] = nr
             out_i[r, c] = ni
@@ -149,20 +151,29 @@ def simulacion_gpe(psi_real, psi_imag, out_r, out_i, V, g, dt):
                 out_i[r, c] *= norm_factor
 
 # ==========================================
-# 5. CAHN-HILLIARD (OPTIMIZADO)
+# 5. OHTA-KAWASAKI (FRUSTRACIÓN TOPOLÓGICA)
 # ==========================================
 @jit(nopython=True, parallel=True, fastmath=True)
-def simulacion_cahn_hilliard(u, out_u, dt, gamma, mobility):
+def simulacion_ohta_kawasaki(u, out_u, dt, gamma, mobility, sigma=0.08):
     rows, cols = u.shape
-    # Simplificación para evitar buffer intermedio 'mu'
-    # Usamos pseudo-difusión directa para visualización
+    
+    # Calcular masa media para interacción no-local
+    u_mean = 0.0
+    for r in range(rows):
+        for c in range(cols):
+            u_mean += u[r, c]
+    u_mean /= (rows * cols)
+
     for r in prange(2, rows - 2):
         for c in range(2, cols - 2):
             dx_g = 1.5
             lap_u = (u[r+1, c] + u[r-1, c] + u[r, c+1] + u[r, c-1] - 4*u[r, c]) / (dx_g**2)
+            
+            # Potencial químico (doble pozo)
             mu = (u[r, c]**3 - u[r, c]) - gamma * lap_u
             
-            val = u[r, c] - dt * mobility * mu
+            # Evolución con repulsión de largo alcance (Frustración Topológica)
+            val = u[r, c] - dt * mobility * mu - dt * sigma * (u[r, c] - u_mean)
             
             val = np.tanh(val) # Clamping suave
             out_u[r, c] = val

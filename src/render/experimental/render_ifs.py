@@ -1,3 +1,4 @@
+# (C) Rebeldía Cósmica | Creado por Santiago Prado
 import numpy as np
 import cv2
 import librosa

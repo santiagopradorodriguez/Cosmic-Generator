@@ -1,8 +1,9 @@
 # 🌌 Cosmic Generator V2.0
-**Generador de Videos Musicales de Rebeldía Cósmica**
+**El Motor Visual de la Cooperativa "Rebeldía Cósmica"**
 
-Bienvenido a Cosmic Generator, un avanzado motor de arte matemático y visualizador musical reactivo impulsado por Inteligencia Artificial y dinámicas no lineales. 
-El software "escucha" la música y genera visuales deslumbrantes basados en parámetros acústicos y decisiones de un Director de IA integrado.
+¡Bienvenidxs a la revolución visual! **Cosmic Generator** es un avanzado motor de arte matemático impulsado por Inteligencia Artificial y dinámicas no lineales. Nuestra herramienta está diseñada para "escuchar" la música, respirar su esencia y generar visuales deslumbrantes basados en la comunión entre el caos algorítmico y nuestro Director de IA. 
+
+Aquí no hay barreras de presupuesto: creemos firmemente que todo artista emergente tiene derecho a un videoclip espectacular. ¡Democratizar el arte es nuestra misión!
 
 ## 🚀 Características
 - **Modularidad:** Motores separados por ramas estables (Fluidos, Automatas Celulares) y experimentales (Caos 3D, IFS).

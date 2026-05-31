@@ -1,3 +1,4 @@
+# (C) Rebeldía Cósmica | Creado por Santiago Prado
 import imageio_ffmpeg
 import os
 try:

@@ -211,10 +211,65 @@ class MotorFX:
         self.prev_frame = cv2.addWeighted(curr_32, 1.0, prev_zoomed, decay, 0)
         return np.clip(self.prev_frame, 0, 255).astype(np.uint8)
 
+    def apply_god_rays(self, img, intensity, threshold=200):
+        """
+        Genera rayos volumétricos (Radial Blur Aditivo) desde el centro.
+        Reactivo a la energía de la música.
+        """
+        if intensity <= 0.05: return img
+        # Extraer luces altas
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        _, mask = cv2.threshold(gray, threshold, 255, cv2.THRESH_BINARY)
+        bright = cv2.bitwise_and(img, img, mask=mask)
+        
+        h, w = bright.shape[:2]
+        center = (w // 2, h // 2)
+        
+        rays = np.zeros_like(img, dtype=np.float32)
+        bright_float = bright.astype(np.float32)
+        
+        # Radial blur iterativo
+        decay = 0.90
+        weight = 1.0
+        
+        # 10 iteraciones de zoom in aditivo
+        for i in range(1, 11):
+            scale = 1.0 + (i * 0.015 * intensity)
+            M = cv2.getRotationMatrix2D(center, 0, scale)
+            warped = cv2.warpAffine(bright_float, M, (w, h))
+            rays += warped * weight
+            weight *= decay
+            
+        rays = np.clip(rays, 0, 255).astype(np.uint8)
+        return cv2.addWeighted(img, 1.0, rays, 0.6 * intensity, 0)
+
+    def plasma_melt_feedback(self, current_frame, decay=0.90, kick=0.0):
+        """
+        Mezcla el cuadro actual con el historial, desplazando el historial
+        hacia arriba y difuminándolo para crear estelas de plasma derritiéndose.
+        """
+        h, w = current_frame.shape[:2]
+        curr_32 = current_frame.astype(np.float32)
+        
+        # Efecto de derretimiento (drift hacia arriba y leve zoom)
+        scale = 1.002 + (kick * 0.003)
+        dy = -1.0 - (kick * 3.0)
+        M = cv2.getRotationMatrix2D((w//2, h//2), 0, scale)
+        M[1, 2] += dy
+        
+        prev_warped = cv2.warpAffine(self.prev_frame, M, (w, h), borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
+        
+        # Blur ligero para que la estela de plasma se disipe orgánicamente
+        prev_warped = cv2.GaussianBlur(prev_warped, (3, 3), 0)
+        
+        # Screen / Additive blend
+        self.prev_frame = cv2.addWeighted(curr_32, 1.0, prev_warped, decay, 0)
+        return np.clip(self.prev_frame, 0, 255).astype(np.uint8)
+
     def shift_hue(self, img, shift_amount):
         """Rota los colores de la imagen (Ciclo HSV)."""
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        # Convertir a int16 para evitar overflow (ej: 179 + 100 = 279, que rompe uint8)
+        # Convertir a int16 para evitar overflow
         h_channel = hsv[:, :, 0].astype(np.int16)
         h_channel = (h_channel + shift_amount) % 180
         hsv[:, :, 0] = h_channel.astype(np.uint8)

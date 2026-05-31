@@ -90,7 +90,7 @@ with st.sidebar:
     
     menu = st.radio(
         "Navegación",
-        ["🏠 Inicio", "🎛️ Generador", "🎬 Director IA", "🧪 Motores", "⚙️ Configuración"]
+        ["🏠 Inicio", "🎛️ Generador", "🎬 Director IA", "🧪 Motores", "⚙️ Configuración", "📚 Academia Matemática", "🧪 Laboratorio de Física"]
     )
     
     st.markdown("---")
@@ -131,7 +131,21 @@ elif menu == "🎛️ Generador":
         
         col1, col2 = st.columns(2)
         with col1:
-            st.selectbox("Selecciona Motor Matemático", ["God Mode (Estándar)", "Main Clásico", "Lenia (Vida Artificial)", "LBM (Fluidos)"])
+            modo_render = st.selectbox(
+                "Selecciona Motor Matemático", 
+                [
+                    "Mix (Todos los Motores)", 
+                    "Gray-Scott Puro", 
+                    "Kuramoto-Sivashinsky (Fuego)",
+                    "Gross-Pitaevskii (Cuántica)", 
+                    "Ecuación de Ondas (Líquido)",
+                    "Allen-Cahn / Ohta-Kawasaki (Burbujas)",
+                    "KdV (Tsunamis)",
+                    "Caos 3D (Atractores de Lorenz)",
+                    "Geometría Sagrada (Fractales IFS)",
+                    "Red Neuronal Rápida (CPPN)"
+                ]
+            )
             ui_seed = st.number_input("Semilla (Seed)", value=42)
             ui_duracion = st.number_input("Duración Test (Segundos, 0 = Canción Completa)", value=0, min_value=0, max_value=600)
             
@@ -142,25 +156,57 @@ elif menu == "🎛️ Generador":
             use_chroma = st.checkbox("Color por Nota Musical", value=False)
             use_lyrics = st.checkbox("Incrustar Letra (Lyrics Neón)", value=False)
             
-        allowed_engines_dict = None
-        with st.expander("⚙️ Modo Avanzado (Constructor de Motores)"):
-            st.markdown("Activa o desactiva ecuaciones individuales para crear tu propio ecosistema físico:")
-            colA, colB = st.columns(2)
-            with colA:
-                e1 = st.checkbox("Gray-Scott (Corrosión)", value=True)
-                e2 = st.checkbox("Kuramoto-Sivashinsky (Fuego)", value=True)
-                e3 = st.checkbox("Gross-Pitaevskii (Cuántica)", value=True)
-                e4 = st.checkbox("Ecuación de Ondas (Líquido)", value=True)
-            with colB:
-                e5 = st.checkbox("Allen-Cahn (Burbujas)", value=True)
-                e6 = st.checkbox("KdV (Tsunamis)", value=True)
-                e7 = st.checkbox("Caos 3D (Atractores de Lorenz)", value=False)
-                e8 = st.checkbox("Geometría Sagrada (Fractales IFS)", value=False)
+        allowed_engines_list = None
+        custom_engines_list = []
+        if modo_render == "Mix (Todos los Motores)":
+            with st.expander("⚙️ Modo Avanzado (Constructor de Motores)", expanded=True):
+                st.markdown("Activa o desactiva ecuaciones individuales para crear tu propio ecosistema físico:")
+                colA, colB = st.columns(2)
+                with colA:
+                    e1 = st.checkbox("Gray-Scott (Corrosión)", value=True)
+                    e2 = st.checkbox("Kuramoto-Sivashinsky (Fuego)", value=True)
+                    e3 = st.checkbox("Gross-Pitaevskii (Cuántica)", value=True)
+                    e4 = st.checkbox("Ecuación de Ondas (Líquido)", value=True)
+                with colB:
+                    e5 = st.checkbox("Allen-Cahn (Burbujas)", value=True)
+                    e6 = st.checkbox("KdV (Tsunamis)", value=True)
+                    e7 = st.checkbox("Caos 3D (Atractores de Lorenz)", value=False)
+                    e8 = st.checkbox("Geometría Sagrada (Fractales IFS)", value=False)
+                    e9 = st.checkbox("Red Neuronal Rápida (CPPN)", value=True)
+                
+                if e1: custom_engines_list.append('GS')
+                if e2: custom_engines_list.append('KS')
+                if e3: custom_engines_list.append('GPE')
+                if e4: custom_engines_list.append('WAVE')
+                if e5: custom_engines_list.append('CH')
+                if e6: custom_engines_list.append('KDV')
+                if e7: custom_engines_list.append('lorenz')
+                if e8: custom_engines_list.append('ifs')
+                if e9: custom_engines_list.append('CPPN')
             
-            allowed_engines_dict = {
-                'gray_scott': e1, 'ks': e2, 'gpe': e3, 'ondas': e4,
-                'cahn_hilliard': e5, 'kdv': e6, 'lorenz': e7, 'ifs': e8
-            }
+        # Determinar allowed_engines final basado en el selectbox principal
+        if modo_render == "Mix (Todos los Motores)":
+            allowed_engines_list = custom_engines_list # Usa lo que haya en avanzado
+        elif modo_render == "Gray-Scott Puro":
+            allowed_engines_list = ['GS']
+        elif modo_render == "Kuramoto-Sivashinsky (Fuego)":
+            allowed_engines_list = ['KS']
+        elif modo_render == "Gross-Pitaevskii (Cuántica)":
+            allowed_engines_list = ['GPE']
+        elif modo_render == "Ecuación de Ondas (Líquido)":
+            allowed_engines_list = ['WAVE']
+        elif modo_render == "Allen-Cahn / Ohta-Kawasaki (Burbujas)":
+            allowed_engines_list = ['CH']
+        elif modo_render == "KdV (Tsunamis)":
+            allowed_engines_list = ['KDV']
+        elif modo_render == "Caos 3D (Atractores de Lorenz)":
+            allowed_engines_list = ['lorenz']
+        elif modo_render == "Geometría Sagrada (Fractales IFS)":
+            allowed_engines_list = ['ifs']
+        elif modo_render == "Red Neuronal Rápida (CPPN)":
+            allowed_engines_list = ['CPPN']
+        else:
+            allowed_engines_list = custom_engines_list
             
         # --- NUEVO FLUJO DE RENDERIZADO CON EDITOR DE LETRAS ---
         temp_audio_path = os.path.join("temp", audio_file.name)
@@ -200,7 +246,7 @@ elif menu == "🎛️ Generador":
                         fps=30,
                         duracion=dur_val,
                         seed=ui_seed,
-                        allowed_engines=allowed_engines_dict,
+                        allowed_engines=allowed_engines_list,
                         use_spirits=use_spirits,
                         use_kaleido=use_kaleido,
                         use_flash=use_flash,
@@ -364,6 +410,152 @@ elif menu == "🧪 Motores":
     st.title("Motores Experimentales")
     st.warning("⚠️ Estos motores están en desarrollo y pueden ser inestables.")
     st.selectbox("Motores", ["Caos 3D (Lorenz/Atractores)", "Fractales (IFS)", "Ecuaciones Inestables"])
+
+elif menu == "📚 Academia Matemática":
+    st.title("Academia Matemática Cósmica 📚")
+    st.markdown("Bienvenido al centro de aprendizaje matemático de la Cooperativa. Aquí podrás estudiar la física real detrás de nuestras simulaciones.")
+    
+    # Cargar reporte del agente
+    try:
+        with open("data/reporte_matematico.md", "r", encoding="utf-8") as f:
+            reporte = f.read()
+        st.markdown(reporte, unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning("El reporte matemático aún se está generando o no se encontró el archivo. Por favor espera unos minutos e intenta nuevamente.")
+
+elif menu == "🧪 Laboratorio de Física":
+    st.title("Laboratorio de Simulación (Sin Música)")
+    st.markdown("Modo de simulación puramente física. No requiere canciones. Se inyectan perturbadores matemáticos sintéticos para observar la dinámica canónica de los sistemas fluidos y de reacción-difusión.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        motor_lab = st.selectbox(
+            "Selecciona Sistema Físico:", 
+            [
+                "Gray-Scott Puro", 
+                "Kuramoto-Sivashinsky (Fuego)",
+                "Gross-Pitaevskii (Cuántica)", 
+                "Ecuación de Ondas (Líquido)",
+                "Allen-Cahn / Ohta-Kawasaki (Burbujas)",
+                "KdV (Tsunamis)",
+                "Caos 3D (Atractores de Lorenz)",
+                "Geometría Sagrada (Fractales IFS)",
+                "Red Neuronal Rápida (CPPN)"
+            ]
+        )
+        duracion_lab = st.number_input("Duración de Simulación (Segundos)", value=10, min_value=1, max_value=60)
+        seed_lab = st.number_input("Semilla Inicial (Seed)", value=42)
+    
+    with col2:
+        st.info("Variables de entorno Matemático")
+        
+        # Diccionario de ecuaciones LaTeX
+        ecuaciones_latex = {
+            "Gray-Scott Puro": r'''
+            \begin{align*}
+            \frac{\partial u}{\partial t} &= D_u \nabla^2 u - u v^2 + F(1-u) \\
+            \frac{\partial v}{\partial t} &= D_v \nabla^2 v + u v^2 - (F+k)v
+            \end{align*}
+            ''',
+            "Kuramoto-Sivashinsky (Fuego)": r'''
+            \frac{\partial u}{\partial t} + \nabla^4 u + \nabla^2 u + \frac{1}{2}|\nabla u|^2 = 0
+            ''',
+            "Gross-Pitaevskii (Cuántica)": r'''
+            i\hbar \frac{\partial \psi}{\partial t} = \left(-\frac{\hbar^2}{2m}\nabla^2 + V(r) + g|\psi|^2 \right)\psi
+            ''',
+            "Ecuación de Ondas (Líquido)": r'''
+            \frac{\partial^2 u}{\partial t^2} = c^2 \nabla^2 u - \gamma \frac{\partial u}{\partial t}
+            ''',
+            "Allen-Cahn / Ohta-Kawasaki (Burbujas)": r'''
+            \frac{\partial u}{\partial t} = \nabla \cdot (M \nabla \mu) - \gamma (u - \overline{u}), \quad \mu = u^3 - u - \nabla^2 u
+            ''',
+            "KdV (Tsunamis)": r'''
+            \frac{\partial u}{\partial t} + \alpha u \frac{\partial u}{\partial x} + \beta \frac{\partial^3 u}{\partial x^3} = 0
+            ''',
+            "Caos 3D (Atractores de Lorenz)": r'''
+            \begin{align*}
+            \dot{x} &= \sigma(y-x) \\
+            \dot{y} &= x(\rho-z)-y \\
+            \dot{z} &= xy-\beta z
+            \end{align*}
+            ''',
+            "Geometría Sagrada (Fractales IFS)": r'''
+            W_i(x) = A_i x + b_i, \quad P(x \to W_i(x)) = p_i
+            ''',
+            "Red Neuronal Rápida (CPPN)": r'''
+            f_{CPPN}(x, y, r, t, z) = \sigma(W_n \dots \sigma(W_1 \vec{v} + b_1) \dots + b_n)
+            '''
+        }
+        
+        # Diccionario de Espacio de Fases (Límites Simulables)
+        espacio_fases = {
+            "Gray-Scott Puro": "Espacio de Fases Estables: F ∈ [0.01, 0.06], k ∈ [0.03, 0.07]",
+            "Kuramoto-Sivashinsky (Fuego)": "Restricción de Estabilidad: dt < 0.01 (CFL condition)",
+            "Gross-Pitaevskii (Cuántica)": "Condición: Conservación de |ψ|^2 = 1.0",
+            "Ecuación de Ondas (Líquido)": "Límites Courant: c * dt / dx <= 1",
+            "Allen-Cahn / Ohta-Kawasaki (Burbujas)": "Estabilidad: Movilidad M < 0.1, dt < 0.05",
+            "KdV (Tsunamis)": "Espacio Solitónico: α > 0, β > 0. Si β < 0 -> Choque inelástico.",
+            "Caos 3D (Atractores de Lorenz)": "Rango Caótico Estándar: σ=10, β=8/3, ρ=28",
+            "Geometría Sagrada (Fractales IFS)": "Restricción Contractiva: det(A_i) < 1",
+            "Red Neuronal Rápida (CPPN)": "Espacio Latente (Z): Normalizado entre -1.0 y 1.0"
+        }
+        
+        st.markdown("### Ecuación Diferencial Canónica")
+        st.latex(ecuaciones_latex.get(motor_lab, ""))
+        
+        st.markdown("### Espacio de Fases (Validación Numérica)")
+        st.warning(espacio_fases.get(motor_lab, ""))
+        st.markdown("- Ruido Estocástico: ON")
+        st.markdown("- Perturbador de Frecuencia: Oscilador Senoidal (0.5 Hz)")
+        st.markdown("- Renderizado: God Mode V2 (Numba + Multi-Threading)")
+        
+    if st.button("🔬 Iniciar Simulación de Laboratorio", type="primary"):
+        from render.stable.render_standard import generar_animacion_god_mode
+        import os
+        
+        temp_video_lab = "temp_lab_simulation.mp4"
+        
+        # Mapear motor
+        lab_engines = []
+        if motor_lab == "Gray-Scott Puro": lab_engines = ['GS']
+        elif motor_lab == "Kuramoto-Sivashinsky (Fuego)": lab_engines = ['KS']
+        elif motor_lab == "Gross-Pitaevskii (Cuántica)": lab_engines = ['GPE']
+        elif motor_lab == "Ecuación de Ondas (Líquido)": lab_engines = ['WAVE']
+        elif motor_lab == "Allen-Cahn / Ohta-Kawasaki (Burbujas)": lab_engines = ['CH']
+        elif motor_lab == "KdV (Tsunamis)": lab_engines = ['KDV']
+        elif motor_lab == "Caos 3D (Atractores de Lorenz)": lab_engines = ['lorenz']
+        elif motor_lab == "Geometría Sagrada (Fractales IFS)": lab_engines = ['ifs']
+        elif motor_lab == "Red Neuronal Rápida (CPPN)": lab_engines = ['CPPN']
+        
+        progress_bar_lab = st.progress(0)
+        def update_progress_lab(current, total):
+            progress_bar_lab.progress(int((current / total) * 100))
+            
+        with st.spinner(f"Calculando campos para {motor_lab}..."):
+            try:
+                success = generar_animacion_god_mode(
+                    ruta_audio=None, # Indicador para modo de simulación pura
+                    nombre_salida_temp=temp_video_lab,
+                    fps=30,
+                    duracion=duracion_lab,
+                    seed=seed_lab,
+                    allowed_engines=lab_engines,
+                    use_spirits=False,
+                    use_kaleido=False,
+                    use_flash=False,
+                    use_chroma=False,
+                    use_lyrics=False,
+                    global_cmap=None,
+                    progress_callback=update_progress_lab
+                )
+                
+                if success and os.path.exists(temp_video_lab):
+                    st.success("Simulación finalizada. Renderización en alta calidad.")
+                    st.video(temp_video_lab)
+                else:
+                    st.error("Hubo un fallo crítico en la simulación física.")
+            except Exception as e:
+                st.error(f"Error en la simulación: {str(e)}")
 
 elif menu == "⚙️ Configuración":
     st.title("Configuración Global")

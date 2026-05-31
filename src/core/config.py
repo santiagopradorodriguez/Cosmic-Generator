@@ -1,4 +1,5 @@
-﻿# Configuración Global y Constantes
+# (C) Rebeldía Cósmica | Creado por Santiago Prado
+# Configuración Global y Constantes
 
 # Resolución de Render
 WIDTH = 1280
@@ -53,5 +54,6 @@ ACTOS = [
     {'engine': 'PARTICLES', 'cmap': 'twilight_shifted', 'kaleido': False, 'p1': 0.95, 'p2': 1.0},
     {'engine': 'GS',   'cmap': 'magma',         'kaleido': False, 'p1': 0.055, 'p2': 0.062},
     {'engine': 'WAVE', 'cmap': 'ocean',         'kaleido': False, 'p1': 0.99,  'p2': 0.01},
-    {'engine': 'KDV',  'cmap': 'viridis',       'kaleido': True,  'p1': 1.0,   'p2': 0.5}
+    {'engine': 'KDV',  'cmap': 'viridis',       'kaleido': True,  'p1': 1.0,   'p2': 0.5},
+    {'engine': 'CPPN', 'cmap': 'hsv',           'kaleido': True,  'p1': 0.5,   'p2': 0.5}
 ]
