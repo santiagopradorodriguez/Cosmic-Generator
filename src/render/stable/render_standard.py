@@ -224,7 +224,7 @@ def generar_animacion_god_mode(
     ifs_grid = np.zeros((gs_h, gs_w), dtype=np.float32)
 
     # --- INICIALIZAR NUEVOS ELEMENTOS (OPENCV PURO) ---
-    lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=3) # MOD: Max 3
+    lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=12) # Aumentado masivamente para Caos 3D
     gen_hojas = GeneradorHojas(WIDTH, HEIGHT)
     
     # --- INICIALIZAR GEOMETRÍA SAGRADA ---
@@ -643,12 +643,14 @@ def generar_animacion_god_mode(
 
             # --- UPDATE GEOMETRÍA Y OBJETOS (OPENCV NEON) ---
             overlay_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
-            
             # 1. Lorenz Swarm (Sigue a los platillos)
             dt_lorenz = 0.005
-            lorenz_swarm.update(overlay_layer, dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'])
+            
             # Extraer color dominante de la nota actual para las capas superiores
             target_color_bgr = NOTE_PALETTE[nota]
+            
+            lorenz_color = target_color_bgr if use_chroma else None
+            lorenz_swarm.update(overlay_layer, dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'], color_bgr_override=lorenz_color)
             
             # 2. Generador de Hojas
             if scene_flags['leaves']:
@@ -666,11 +668,13 @@ def generar_animacion_god_mode(
                 superforma.update(overlay_layer, i*0.02, kick, harm, color_mpl)
             
             # 4. Espíritus (Metaballs/Trails)
-            num_active_spirits = int(1 + (num_espiritus - 1) * (progreso ** 1.5))
-            for idx, esp in enumerate(espiritus):
-                if idx < num_active_spirits:
-                    t_esp = i * 0.05 + (idx * 13.0) 
-                    esp.update(overlay_layer, pos_espiritus[idx], -0.5, 0.8, t_esp, kick, harm, color_mpl)
+            # FIX: Si estamos en el modo puro Caos 3D, desactivamos los espíritus para que no tapen las líneas del atractor
+            if escena['engine'] != 'lorenz':
+                num_active_spirits = int(1 + (num_espiritus - 1) * (progreso ** 1.5))
+                for idx, esp in enumerate(espiritus):
+                    if idx < num_active_spirits:
+                        t_esp = i * 0.05 + (idx * 13.0) 
+                        esp.update(overlay_layer, pos_espiritus[idx], -0.5, 0.8, t_esp, kick, harm, color_mpl)
             
             # Aplicar suave resplandor (Neon Glow) al overlay
             overlay_layer = cv2.GaussianBlur(overlay_layer, (3, 3), 0)

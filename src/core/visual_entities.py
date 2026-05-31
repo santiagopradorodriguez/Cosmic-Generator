@@ -301,7 +301,7 @@ class LorenzSwarm:
         py = int((-y + logical_h/2) / logical_h * self.h)
         return px, py
 
-    def update(self, frame, dt_base, kick, cymbals, visible=True):
+    def update(self, frame, dt_base, kick, cymbals, visible=True, color_bgr_override=None):
         if not visible: return
 
         theta = cymbals * 15.0 
@@ -331,7 +331,7 @@ class LorenzSwarm:
             pts_3d = np.array(attr['hist']).T
             if len(pts_3d) > 1:
                 pts_rot = pts_3d @ Ry
-                scale = 0.04
+                scale = 0.08 # Más grande
                 off_x, off_y = attr['offset']
                 shake = np.random.uniform(-0.02, 0.02) * kick
                 
@@ -344,8 +344,9 @@ class LorenzSwarm:
                 for i in range(1, len(screen_pts)):
                     pt1 = screen_pts[i-1]
                     pt2 = screen_pts[i]
-                    thick = max(1, int((i / 80) * 4 * (1 + cymbals)))
-                    cv2.line(frame, pt1, pt2, attr['color_bgr'], thick, cv2.LINE_AA)
+                    thick = max(2, int((i / 80) * 8 * (1 + cymbals))) # Más grueso
+                    color_line = color_bgr_override if color_bgr_override else attr['color_bgr']
+                    cv2.line(frame, pt1, pt2, color_line, thick, cv2.LINE_AA)
 
 class GeneradorHojas:
     """
