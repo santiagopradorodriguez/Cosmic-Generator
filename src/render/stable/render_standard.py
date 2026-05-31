@@ -652,6 +652,8 @@ def generar_animacion_god_mode(
             
             lorenz_color = target_color_bgr if use_chroma else None
             lorenz_swarm.update(overlay_layer, dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'], color_bgr_override=lorenz_color)
+            if escena['engine'] == 'lorenz':
+                print(f"Frame {i} Lorenz Overlay Max: {np.max(overlay_layer)}")
             
             # 2. Generador de Hojas
             if scene_flags['leaves']:
@@ -701,7 +703,7 @@ def generar_animacion_god_mode(
                 break
             
             try:
-                render_queue.put((i, bg_layer.copy(), kick, harm, cymbals_val, textura, use_flash, use_lyrics), timeout=5.0)
+                render_queue.put((i, frame_final, kick, harm, cymbals_val, textura, use_flash, use_lyrics), timeout=5.0)
             except:
                 print("Error: Cola llena y consumidor bloqueado.")
                 break
