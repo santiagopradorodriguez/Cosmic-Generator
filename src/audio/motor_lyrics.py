@@ -69,16 +69,18 @@ def transcribir_audio_para_edicion(audio_path, model_size="medium", max_duration
         return f"Error al transcribir el audio. Detalles técnicos: {e}"
 
 class LyricsEngine:
-    def __init__(self, audio_path, max_duration=None, position="Abajo"):
+    def __init__(self, audio_path, max_duration=None, position="Abajo", progress_callback=None):
         """
         Inicializa el motor de lyrics.
         :param audio_path: Ruta al archivo de audio.
         :param max_duration: Si se especifica, solo procesa esta cantidad de segundos.
         :param position: "Abajo" o "Centro".
+        :param progress_callback: Función f(current, total) para reportar progreso a la UI.
         """
         self.audio_path = os.path.abspath(audio_path)
         self.max_duration = max_duration
         self.position = position
+        self.progress_callback = progress_callback
         # El archivo JSON se guardará en la misma carpeta que el audio con el mismo nombre base
         self.json_path = os.path.splitext(audio_path)[0] + ".json"
         self.data = {} # Inicializar vacío para evitar NoneType error
@@ -196,7 +198,12 @@ class LyricsEngine:
             if external_text:
                 print("   🎯 MODO ALINEACIÓN: Usando letra original para sincronizar...")
                 # align() fuerza al modelo a usar este texto y solo buscar los tiempos
-                result = model.align(audio_array, external_text, language='es')
+                result = model.align(
+                    audio_array, 
+                    external_text, 
+                    language='es',
+                    progress_callback=self.progress_callback
+                )
             else:
                 print("   ✍️  MODO TRANSCRIPCIÓN: La IA adivinará la letra...")
                 # verbose=True mostrará el progreso frase por frase
@@ -204,7 +211,8 @@ class LyricsEngine:
                     audio_array, 
                     language='es', 
                     vad=False, 
-                    verbose=True
+                    verbose=True,
+                    progress_callback=self.progress_callback
                 )
             
             # Guardar en JSON para futuras ejecuciones

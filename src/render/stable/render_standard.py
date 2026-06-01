@@ -153,8 +153,8 @@ def generar_animacion_god_mode(
     if use_lyrics:
         try:
             from audio.motor_lyrics import LyricsEngine
-            print("Inicializando Motor de Lyrics (Stable-TS)...")
-            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion, position=lyrics_pos)
+            # Pasamos progress_callback para que la UI se mueva durante la extracción/alineación
+            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion, position=lyrics_pos, progress_callback=progress_callback)
         except Exception as e:
             print(f"Advertencia: Error cargando LyricsEngine: {e}")
 
