@@ -1,0 +1,16 @@
+\section{Extracción de Parámetros de Audio}
+\label{sec:extraccion_audio}
+
+El corazón rítmico de Cosmic-Generator reside en su módulo de análisis avanzado, ubicado en \texttt{src/audio/motor\_audio.py}. Para lograr una reactividad visual ultra optimizada y matemáticamente precisa, empleamos la librería \texttt{librosa} para diseccionar el espectro acústico en el dominio del tiempo y la frecuencia, transformándolo en tensores de control que alimentan directamente nuestra tubería gráfica.
+
+\subsection{Energía y Zoom (RMS)}
+El cálculo del \textit{Root Mean Square} (RMS) nos proporciona una métrica directa de la energía térmica y amplitud de la señal.
+Extraemos la energía promedio por cada \textit{frame} de audio y la aplicamos como un escalar no lineal en la matriz de transformación proyectiva (Zoom). De esta manera, a mayor intensidad percusiva o volumen acústico, generamos una compresión espacial que empuja la cámara hacia la acción.
+
+\subsection{Turbulencia y Flujo Espectral (Spectral Flux)}
+Para inducir caos controlado e inestabilidades realistas en la simulación de partículas y fluidos, calculamos el \textit{Spectral Flux}. Esta métrica evalúa la tasa de cambio (la primera derivada discreta) de la magnitud del espectro de potencias entre \textit{frames} consecutivos.
+Este gradiente espectral alimenta de inmediato nuestros campos vectoriales y los coeficientes de advección, inyectando vórtices y ráfagas de turbulencia direccional proporcionales a los ataques e impulsos de alta frecuencia de la pista.
+
+\subsection{Cromestesia y Color (Pitch/Tonalidad)}
+Nuestra arquitectura de sombreadores de fragmentos (\textit{Fragment Shaders}) no emplea paletas de colores estáticas. El color de la simulación obedece a un mapeo dinámico entre el \textit{pitch} dominante y el espacio cromático.
+Mediante \texttt{librosa}, extraemos la frecuencia fundamental ($f_0$) y el cromagrama del audio para clasificar la tonalidad en tiempo real. Esta tonalidad modula los canales RGB de forma algorítmica, induciendo una cromestesia donde las frecuencias graves tiñen el entorno de fluidos densos y rojizos, mientras que los armónicos agudos cristalizan la escena en destellos cianes y blancos de alta luminancia.

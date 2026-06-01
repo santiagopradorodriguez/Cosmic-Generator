@@ -1,0 +1,18 @@
+\section{Frecuencia y Sincronización de Cambio de Parámetros}
+\label{sec:frecuencia_parametros}
+
+La sincronización milimétrica entre la integración del motor físico en la GPU y la línea de tiempo acústica es nuestro mayor desafío resuelto. Hemos estructurado una arquitectura asíncrona altamente paralela para evitar bloqueos y asegurar que el renderizado se mantenga fluido sin sacrificar la rigurosidad de las colisiones y campos de fuerza.
+
+\subsection{Muestreo Discreto del Audio}
+En la fase de pre-cómputo, el módulo de audio procesa la pista completa extrayendo características \textit{frame} a \textit{frame}. Estableciendo una frecuencia de muestreo de fotogramas (por ejemplo, a 30 FPS constantes), dividimos el audio obteniendo un arreglo vectorial de tamaño $\text{duración total} \times \text{FPS}$.
+Este arreglo indexable nos permite un acceso a memoria en $\mathcal{O}(1)$ para extraer las variables ambientales necesarias de acuerdo al tiempo de la simulación.
+
+\subsection{Time-stepping Loop vs. Render Loop}
+Para maximizar el rendimiento gráfico, implementamos un desacoplamiento de bucles.
+El bucle de dibujado (Render Loop) está dedicado exclusivamente a interpolar y enviar \textit{buffers} a la pantalla con la menor latencia posible.
+Simultáneamente, en un hilo de ejecución paralelo, transcurre el \textit{Time-stepping Loop} de la simulación física. En CADA iteración de este bucle físico, el motor extrae el \textit{timestamp} actual e indexa el \textit{array} de audio, inyectando los parámetros del \textit{frame} acústico exactamente en el momento que la física requiere su actualización.
+
+\subsection{Mutación Dinámica de la Difusión}
+El verdadero poder del Cosmic-Generator se despliega en cómo la acústica altera las leyes físicas. En cada actualización de los \textit{solvers} de la simulación de fluidos, los coeficientes de las ecuaciones de difusión mutan drásticamente:
+la intensidad acústica (derivada del RMS) modula escalarmente la viscosidad y difusividad térmica, forzando a los fluidos a volverse más reactivos o densos.
+Simultáneamente, las frecuencias dominantes inyectan anisotropía direccional al tensor de difusión. El resultado es un estado de materia puramente reactivo, donde el sonido altera topológicamente los coeficientes matemáticos a razón de 30 veces por segundo, esculpiendo gráficamente la canción.
