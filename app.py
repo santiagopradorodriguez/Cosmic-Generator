@@ -91,7 +91,7 @@ except Exception as e:
 
 # Barra lateral (Sidebar)
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/2048px-Spotify_logo_without_text.svg.png", width=50) # Imagen placeholder
+    st.image("logo.jpg", width=180) # Logo oficial (Nihil Morari)
     st.title("Cosmic Generator")
     st.markdown("---")
     
