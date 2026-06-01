@@ -97,7 +97,7 @@ with st.sidebar:
     
     menu = st.radio(
         "Navegación",
-        ["🏠 Inicio", "🎛️ Generador", "🎬 Director IA", "🧪 Motores", "🎧 Separador de Stems", "⚙️ Configuración", "📚 Academia Matemática", "🧪 Laboratorio de Física"]
+        ["🏠 Inicio", "🎛️ Generador", "🎬 Director IA", "🧪 Motores", "🎧 Separador de Stems", "⚙️ Configuración", "📚 Academia Matemática", "🧪 Laboratorio de Física", "🎵 Nihil Morari (Álbum)"]
     )
     
     st.markdown("---")
@@ -710,3 +710,33 @@ elif menu == "⚙️ Configuración":
     st.selectbox("Resolución de Salida", ["1920x1080 (FHD)", "1280x720 (HD)", "640x360 (SD)"])
     st.number_input("FPS (Frames por segundo)", value=30, min_value=15, max_value=60)
     st.text_input("Ruta de Guardado", value="RENDERS/")
+
+elif menu == "🎵 Nihil Morari (Álbum)":
+    st.title("🎵 Nihil Morari - Rebeldía Cósmica")
+    st.write("*Rebeldía Cósmica es un proyecto musical latinoamericano que mezcla rock progresivo y experimental con synth-pop, heavy metal, salsa y más. Sus canciones forman parte de un álbum conceptual que explora temas como el nihilismo, la conciencia y el cosmos.*")
+    st.markdown("### Escucha el álbum completo aquí:")
+    st.markdown("[▶️ **Rebeldía Cósmica en Bandcamp: Nihil Morari**](https://rebeldiacosmica.bandcamp.com/album/nihil-morari-2)", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    st.markdown('''
+"Nihil Morari" es una obra que trasciende las fronteras de la música para llevar al oyente a un viaje introspectivo y filosófico a través de las profundidades de la condición humana y el vasto cosmos que nos rodea. Consta de doce pistas, cada una de ellas una exploración profunda de temas que abarcan desde el miedo y la soledad hasta la mortalidad y la búsqueda de significado en un universo en constante expansión.
+
+Este álbum desafía la musica convencional y nos invita a explorar al ser humano desde su posición en el cosmos. Cada canción es un portal a un mundo de reflexión filosófica y autoexploración. Si buscas una experiencia musical que te haga reflexionar sobre tu lugar en el universo y la complejidad de la existencia humana, este álbum es una elección recomendada. Su diversidad de géneros y letras lo convierten en una obra, capaz de dejarte asombrado y con una profunda apreciación por la vastedad del cosmos y la profundidad de la mente humana.
+
+Invita a los oyentes a explorar temas existenciales y filosóficos profundos. A lo largo del álbum, el astronauta protagonista emprende un viaje introspectivo en busca de respuestas sobre la vida, la muerte, el tiempo y el universo. Cada canción aporta una perspectiva única a esta odisea cósmica, creando una narrativa emocionante y reflexiva.
+''')
+    
+    st.info("**Géneros Musicales:** Dream Pop, Ambient, Neopsicodelia, Art Rock, Electropop, Synth-Pop, Rock Electrónico, Drum and Bass, Emo, Avant-Garde Pop, Folk, Psicodelia, Rock Progresivo, Post-Rock, Space Rock, Hard Rock, Art Rock, Soft Rock, Hip-Hop, Latin, Metal Progresivo.")
+    
+    st.markdown("---")
+    st.markdown("### Créditos")
+    st.markdown("""
+*Released April 2, 2024*
+
+- **Guitarras:** Santiago Prado, Emanuel Prado
+- **Voces:** Santiago Prado, Emanuel Prado
+- **Sintetizadores:** Santiago Prado
+- **Batería:** Alejandro Viñales
+- **Productor:** Santiago Prado
+- **Diseño de Tapa:** Sofía Martínez
+    """)
