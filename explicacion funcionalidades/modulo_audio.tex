@@ -1,0 +1,27 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
+\section{Módulo: src/audio (Síntesis y Gestión de Sonido)}
+
+El directorio \texttt{src/audio} es el responsable de actuar como el puente sensorial de la simulación. En Cosmic-Generator, el flujo de información es bidireccional: la música altera la física, pero la física (eventos) también debe ser interpretada.
+
+\subsection{Extracción Acústica (\texttt{audio\_analyzer.py})}
+Este archivo emplea la librería \texttt{librosa} para diseccionar un archivo de audio de entrada en variables numéricas utilizables por el motor físico. Extrae:
+\begin{itemize}
+    \item \textbf{Energía (RMS):} La amplitud o volumen del fotograma actual.
+    \item \textbf{Spectral Flux (Flujo Espectral):} Los ataques transitorios (ej: golpes de batería o platillos).
+    \item \textbf{Tonalidad y Pitch Centroide:} Las frecuencias fundamentales que definirán las paletas cromáticas (\textit{Cromestesia}).
+\end{itemize}
+
+\subsection{Alineación de Letras (\texttt{motor\_lyrics.py})}
+Contiene el motor de Inteligencia Artificial (\texttt{stable-ts} / Whisper). Escucha el archivo de audio, aísla las frecuencias vocales y genera un diccionario JSON con las marcas de tiempo (timestamps) exactas de cada palabra. Además, implementa la tecnología de \textbf{Alineación Forzada}, permitiendo al usuario inyectar la letra original y obligando a la IA a sincronizar matemáticamente las sílabas, eliminando cualquier tipo de alucinación del modelo.
+
+\subsection{Eventos Disparados por el Core}
+Cuando el módulo físico (\texttt{src/core}) detecta una colisión de alta energía, envía una señal asíncrona a este módulo. Dependiendo de la magnitud del impacto, el sistema de audio puede inyectar un efecto sonoro o alterar la retroalimentación visual basada en frecuencias sonoras inyectadas de vuelta al pipeline.
+
+\end{document}

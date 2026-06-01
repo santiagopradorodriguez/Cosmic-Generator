@@ -1,0 +1,30 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
+\section{Módulo: src/render (Representación Visual Exclusiva)}
+
+El directorio \texttt{src/render} es el final de la cadena de montaje computacional (Pipeline). Es el módulo consumidor puro: no realiza cálculos físicos ni análisis de audio; su única misión es recopilar los tensores numéricos del \texttt{core}, asignarles texturas y enviarlos a la pantalla o a un archivo de video final de manera ultarrápida.
+
+\subsection{Estructura del Motor de Renderizado}
+El directorio se divide en ramas de estabilidad:
+\begin{itemize}
+    \item \textbf{\texttt{stable/render\_standard.py}:} El bucle principal de renderizado usando OpenCV (\texttt{cv2}). Se encarga de transformar las matrices abstractas del \texttt{core} en fotogramas RGB (\textit{frames}).
+    \item \textbf{\texttt{experimental/}:} Contiene motores de renderizado más avanzados o no lineales (como trazado de rayos básico o Shaders nativos) que están en fase beta.
+\end{itemize}
+
+\subsection{Proceso de Dibujado (Drawing Pipeline)}
+El motor \texttt{render\_standard.py} orquesta la función \texttt{generar\_animacion\_god\_mode()}. Su ciclo de vida es el siguiente:
+\begin{enumerate}
+    \item Lee la matriz escalar generada por \texttt{src/core} (por ejemplo, el mapa de densidad de un fluido).
+    \item Aplica un mapeo de color (Colormap) dinámico basado en las variables dictadas por \texttt{src/audio} (Tonalidad).
+    \item Si corresponde, dibuja las partículas usando operaciones de trazado matricial o \texttt{cv2.circle}.
+    \item Si el \texttt{motor\_lyrics.py} envía texto sincronizado, invoca rutinas tipográficas (\texttt{Pillow} o \texttt{cv2.putText}) para sobreimprimir la lírica en pantalla con colores vibrantes y desenfoques (Bloom).
+    \item Escribe el fotograma directamente en el \textit{VideoWriter} (FFmpeg) para exportar el `.mp4` final, reportando el progreso a la interfaz de usuario.
+\end{enumerate}
+
+\end{document}

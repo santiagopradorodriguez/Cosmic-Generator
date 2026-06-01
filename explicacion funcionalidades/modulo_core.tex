@@ -1,0 +1,23 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
+\section{Módulo: src/core (Motor Numérico y Físico)}
+
+El directorio \texttt{src/core} constituye el cerebro matemático de la simulación. Su responsabilidad es pura y exclusivamente el cálculo numérico, la dinámica geométrica y la actualización de los estados físicos del universo, permaneciendo completamente ciego respecto a cómo estos datos se dibujan en pantalla o cómo suenan.
+
+\subsection{Archivos Principales y Funcionalidad}
+\begin{itemize}
+    \item \textbf{\texttt{nucleo\_espectral.py} y \textbf{\texttt{nucleo\_neural.py}}:} Estos archivos contienen las clases matemáticas que resuelven las ecuaciones diferenciales (como Gray-Scott o Navier-Stokes) y las redes neuronales (CPPN). Manejan tensores de NumPy/PyTorch para calcular gradientes espaciales y operadores laplacianos en cada iteración temporal.
+    \item \textbf{\texttt{visual\_entities.py}:} Define la orientación espacial, vectores de posición, velocidad y aceleración de las partículas discretas en simulaciones de N-cuerpos. 
+    \item \textbf{\texttt{efectos\_visuales.py}:} Gestiona las transformaciones proyectivas de la matriz espacial, tales como las rotaciones en ejes 3D proyectadas a 2D y el factor de escala (zoom) dictaminado por la intensidad física calculada.
+\end{itemize}
+
+\subsection{Cálculos de Dinámica y Cinemática}
+En este módulo, el tiempo se trata como una variable discreta. En cada actualización (\textit{update}), las coordenadas y matrices de estado evolucionan. Se resuelven integraciones explícitas de Euler o Runge-Kutta para asegurar que la masa, el momento y la energía matemática se comporten bajo leyes deterministas. No existen colores ni píxeles aquí, sólo arreglos de números flotantes de alta precisión.
+
+\end{document}
