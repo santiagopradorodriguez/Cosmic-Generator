@@ -1,0 +1,53 @@
+\section{Fundamentos Físico-Matemáticos de los Motores Dinámicos}
+\label{sec:fundamentos_motores}
+
+En esta sección, formalizamos los modelos fenomenológicos que subyacen a los diversos motores visuales del simulador \textit{Cosmic-Generator}. La rigurosidad nos exige comprender que los patrones observados no son meros artefactos gráficos, sino soluciones emergentes de sistemas de Ecuaciones Diferenciales Parciales (EDP) altamente no lineales.
+
+\subsection{Motor de Corrosión: Modelo de Reacción-Difusión de Gray-Scott}
+El motor que produce los intrincados patrones biológicos y de "corrosión" se basa en el célebre sistema de reacción-difusión introducido por P. Gray y S.K. Scott. Este modelo describe la cinética de dos especies químicas, $U$ y $V$, que se difunden en el espacio y reaccionan según una dinámica de retroalimentación autocatalítica. El sistema acoplado se rige por:
+
+\begin{equation}
+\frac{\partial u}{\partial t} = D_u \nabla^2 u - u v^2 + f(1 - u)
+\end{equation}
+
+\begin{equation}
+\frac{\partial v}{\partial t} = D_v \nabla^2 v + u v^2 - (f + k)v
+\end{equation}
+
+donde $u(\mathbf{r},t)$ y $v(\mathbf{r},t)$ representan las concentraciones espaciales. $D_u$ y $D_v$ son las constantes de difusión, $f$ es la tasa de alimentación (feed) que repone $U$, y $k$ la tasa de decaimiento o aniquilación (kill) de $V$. Los patrones visuales emergen de la inestabilidad de Turing inducida por la competencia entre una difusión rápida de la especie inhibidora y la reacción local de la especie activadora.
+
+\subsection{Motor de Fuego: Ecuación de Kuramoto-Sivashinsky}
+Para la simulación de frentes de llama y turbulencia espaciotemporal, empleamos la ecuación de Kuramoto-Sivashinsky. Originalmente derivada para modelar inestabilidades termo-difusivas en frentes de combustión, su forma fenomenológica en términos de fluctuaciones del frente $h(\mathbf{r},t)$ es:
+
+\begin{equation}
+\frac{\partial h}{\partial t} = -\frac{1}{2} |\nabla h|^2 - \nabla^2 h - \nabla^4 h
+\end{equation}
+
+Aquí observamos tres contribuciones fundamentales: el término no lineal $\frac{1}{2} |\nabla h|^2$ que estabiliza el crecimiento y transfiere energía entre escalas; el término difusivo inverso $-\nabla^2 h$ que bombea energía al sistema (inestabilidad en bajas frecuencias); y el término hiperdifusivo $-\nabla^4 h$ que disipa las perturbaciones de onda corta. Esto genera el comportamiento caótico y fractal propio del "fuego".
+
+\subsection{Motor Cuántico: Ecuación de Gross-Pitaevskii}
+Para representar campos de naturaleza cuántica, como los condensados de Bose-Einstein o fluidos de luz, recurrimos a una formulación de campo medio que obedece a la Ecuación de Schrödinger No Lineal (NLS), conocida en materia condensada como ecuación de Gross-Pitaevskii:
+
+\begin{equation}
+i \hbar \frac{\partial \psi}{\partial t} = \left( -\frac{\hbar^2}{2m} \nabla^2 + V(\mathbf{r}) + g |\psi|^2 \right) \psi
+\end{equation}
+
+donde $\psi(\mathbf{r},t)$ es la función de onda macroscópica compleja, $m$ es la masa efectiva, $V(\mathbf{r})$ es un potencial externo de confinamiento, y el término $g |\psi|^2$ representa las interacciones de contacto entre partículas (repulsivas para $g > 0$). Las fluctuaciones en su amplitud y fase dan origen a vórtices cuánticos y a una interferencia dinámica soberbia.
+
+\subsection{Motor de Onda: Dinámica Hiperbólica Clásica}
+El motor de ondulaciones superficiales es, en el fondo, una integración de la ecuación de onda clásica, el arquetipo de las ecuaciones diferenciales hiperbólicas:
+
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} = c^2 \nabla^2 u - \gamma \frac{\partial u}{\partial t}
+\end{equation}
+
+El campo escalar $u(\mathbf{r},t)$ representa la elongación respecto al equilibrio. El parámetro $c$ denota la velocidad de propagación de la perturbación, y hemos añadido un término fenomenológico $\gamma \partial_t u$ para modelar la disipación (amortiguamiento). La rigurosa conservación de la energía y el principio de Huygens se manifiestan visualmente a través de la reflexión y refracción.
+
+\subsection{Motor de Tsunamis: Ecuación de Korteweg-de Vries (KdV)}
+Finalmente, la asombrosa persistencia de ondas solitarias en el entorno visual está comandada por la ecuación de Korteweg-de Vries (KdV). Modelando aguas poco profundas, nos entrega la génesis de los \textit{solitones}:
+
+\begin{equation}
+\frac{\partial u}{\partial t} + \alpha u \frac{\partial u}{\partial x} + \beta \frac{\partial^3 u}{\partial x^3} = 0
+\end{equation}
+
+Esta maravilla matemática describe cómo la dispersión lineal (el término con tercera derivada $\partial^3_x u$) y el empinamiento no lineal (el término advectivo $u \partial_x u$) se balancean con exactitud. El resultado es un paquete de ondas que se propaga sin deformarse temporalmente, un fenómeno crítico para la descripción de los tsunamis y ciertas fibras ópticas.

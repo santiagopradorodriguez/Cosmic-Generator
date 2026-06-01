@@ -1,0 +1,35 @@
+\section{Discretización y Simulación Numérica de Sistemas Dinámicos}
+\label{sec:simulacion_numerica}
+
+Es un principio innegable en la física computacional moderna que una Ecuación Diferencial Parcial carece de utilidad empírica hasta que no es llevada a un entorno discreto estable. En \textit{Cosmic-Generator}, materializamos las teorías del Capítulo 1 utilizando tensores en PyTorch o arreglos contiguos en NumPy, acelerados frecuentemente mediante el compilador JIT Numba. El éxito de estos métodos recae en la aplicación canónica de Diferencias Finitas y algoritmos de integración temporal sólidos.
+
+\subsection{Discretización Espacial y el Operador Laplaciano}
+El núcleo de la mayoría de nuestros motores (Gray-Scott, Onda, Kuramoto-Sivashinsky) depende de la evaluación precisa del Laplaciano espacial $\nabla^2 u$. En un retículo bidimensional de espaciado uniforme $\Delta x = \Delta y$, aplicamos un esquema de diferencias finitas de segundo orden (la plantilla de 5 puntos de Von Neumann):
+
+\begin{equation}
+\nabla^2 u_{i,j} \approx \frac{u_{i+1,j} + u_{i-1,j} + u_{i,j+1} + u_{i,j-1} - 4u_{i,j}}{(\Delta x)^2}
+\end{equation}
+
+Para las evaluaciones dispersivas o de mayor orden, como el término bilaplaciano $\nabla^4 h$ en Kuramoto-Sivashinsky o la tercera derivada en KdV, se componen iterativamente estas aproximaciones o se aplican plantillas extendidas de 9 o más puntos para preservar la simetría rotacional en la grilla y evitar artefactos anisotrópicos puramente computacionales.
+
+\subsection{Condiciones de Frontera Periódicas y Optimizaciones Tensoriales}
+Un simulador continuo precisa una topología sin bordes para evitar reflexiones espurias, asumiendo una geometría toroidal. Esto lo logramos matemáticamente imponiendo condiciones de frontera periódicas: $u(0, y) = u(L_x, y)$ y $u(x, 0) = u(x, L_y)$.
+
+A nivel de software (NumPy o PyTorch), esto se vectoriza magistralmente mediante la operación \texttt{roll}. En lugar de utilizar lentos bucles \texttt{for}, desplazamos el estado global del sistema de esta manera:
+
+\begin{equation}
+u_{i+1,j} \implies \texttt{np.roll(u, shift=-1, axis=0)}
+\end{equation}
+
+Sumar matrices desplazadas permite computar las diferencias finitas sobre toda la malla simultáneamente, sacando provecho de las instrucciones SIMD del procesador o la paralelización extrema de las arquitecturas CUDA en la GPU.
+
+\subsection{Integración Temporal: Euler Explícito vs. Runge-Kutta}
+Toda vez calculado el funcional de derivadas espaciales $F(u)$, la evolución se transforma en un problema de valor inicial: $\partial_t u = F(u)$. Para los motores que demandan máximo rendimiento en tiempo real y exhiben alta disipación (como Gray-Scott o la Onda clásica), utilizamos el método de \textbf{Euler explícito}, el cual aproxima la serie de Taylor al primer orden:
+
+\begin{equation}
+u(t + \Delta t) = u(t) + \Delta t \cdot F(u(t))
+\end{equation}
+
+Aunque computacionalmente económico, el método de Euler exige un paso temporal $\Delta t$ severamente restringido por el criterio de estabilidad de Courant-Friedrichs-Lewy (CFL), especialmente ante los términos difusivos ($\Delta t \propto (\Delta x)^2$). 
+
+Por el contrario, para ecuaciones rígidas ("stiff") y sin disipación natural como la Ecuación de Schrödinger (Gross-Pitaevskii) o la KdV, el método de Euler introduce una espuria explosión de energía. En estas dinámicas, el simulador debe emplear esquemas simplécticos o el clásico \textbf{Runge-Kutta de cuarto orden (RK4)}, integrando estados intermedios $k_1, k_2, k_3, k_4$ que cancelan errores hasta el orden $\mathcal{O}(\Delta t^4)$, asegurando la conservación de los invariantes físicos fundamentales que la academia manda.
