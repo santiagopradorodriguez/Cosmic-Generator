@@ -477,6 +477,15 @@ elif menu == "📚 Academia Matemática":
     st.title("Academia Matemática Cósmica 📚")
     st.markdown("Bienvenido al centro de aprendizaje matemático de la Cooperativa. Aquí podrás estudiar la física real detrás de nuestras simulaciones.")
     
+    manual_path = "explicacion funcionalidades/Manual_de_Usuario_2_Definitivo.pdf"
+    if os.path.exists(manual_path):
+        with open(manual_path, "rb") as f:
+            st.download_button(
+                label="📥 Descargar Manual Definitivo (PDF)",
+                data=f,
+                file_name="Manual_de_Usuario_2_Definitivo.pdf",
+                mime="application/pdf"
+            )
     # Cargar reporte del agente
     try:
         with open("data/reporte_matematico.md", "r", encoding="utf-8") as f:
