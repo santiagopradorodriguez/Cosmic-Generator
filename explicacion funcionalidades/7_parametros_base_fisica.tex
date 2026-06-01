@@ -1,0 +1,46 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
+\section{Fundamentación de los Parámetros Físicos Base}
+
+Para que Cosmic-Generator produzca un espectáculo visual estable y estéticamente superior antes de que la acústica intervenga, fue imperativo seleccionar un conjunto de parámetros físicos iniciales (base) ubicados en regímenes matemáticos muy específicos. A continuación, el Comité de Física Teórica desglosa la elección de estos escalares codificados en \texttt{config.py}.
+
+\subsection{Motor Gray-Scott (Reacción-Difusión)}
+El motor principal del simulador arranca frecuentemente con los parámetros:
+\begin{equation}
+f \text{ (Feed Rate)} = 0.055, \quad k \text{ (Kill Rate)} = 0.062
+\end{equation}
+
+\textbf{¿Por qué?} Estos valores exactos fueron descubiertos por John E. Pearson en 1993 ("Complex Patterns in a Simple System"). En el diagrama de fase paramétrico $(f, k)$ del modelo de Gray-Scott, esta coordenada corresponde al régimen de \textbf{Patrones de Coral o Laberintos}. 
+Si el \textit{feed rate} fuese más alto, el sistema colapsaría a un estado homogéneo. Si fuese más bajo, la reacción se extinguiría. Este punto crítico permite que, cuando el audio introduzca fluctuaciones vía RMS, el laberinto se fragmente transitoriamente en manchas de Turing (spots) o mitosis celular, retornando al laberinto al cesar la música.
+
+\subsection{Motor Kuramoto-Sivashinsky (KS)}
+Los parámetros base dictados para el fuego turbulento son:
+\begin{equation}
+\nu \text{ (Hiperdifusión)} = 0.1, \quad \text{Advección} = 0.0
+\end{equation}
+
+\textbf{¿Por qué?} La ecuación KS es un modelo arquetípico de caos espaciotemporal. Al fijar el coeficiente de hiperdifusión ($\nabla^4$) en 0.1, garantizamos que las inestabilidades de onda larga generadas por la difusión inversa ($-\nabla^2$) sean amortiguadas exactamente en el rango de los píxeles de nuestra resolución. Esto produce celdas de "fuego" que tienen un diámetro visualmente armónico en resoluciones 720p/1080p, en lugar de ruido blanco de alta frecuencia que resultaría desagradable a la vista.
+
+\subsection{Motor Cuántico (Gross-Pitaevskii - GPE)}
+Para la simulación del condensado de Bose-Einstein, el parámetro de interacción $g$ está seteado en:
+\begin{equation}
+g \text{ (Interacción)} = -2.0
+\end{equation}
+
+\textbf{¿Por qué?} En la física de gases cuánticos diluidos, un valor de $g < 0$ indica interacciones \textbf{atractivas} entre bosones. Matemáticamente, esto induce el colapso del condensado y la formación de solitones brillantes (Bright Solitons). Visualmente, esto crea un efecto de "agujero negro luminoso" donde la materia colapsa estéticamente hacia el centro, el cual luego es perturbado y puesto en rotación por los ataques percusivos de la batería.
+
+\subsection{Motor de Onda Clásica}
+El amortiguamiento ($\gamma$) se establece muy cercano a $0.99$ (es decir, decaimiento del 1\%):
+\begin{equation}
+\gamma = 0.99
+\end{equation}
+
+\textbf{¿Por qué?} Un amortiguamiento nulo ($\gamma = 1.0$) causaría que la energía acústica inyectada fotograma a fotograma se acumule infinitamente, sobreexponiendo la pantalla a blanco (clipping). Un decaimiento del 1\% provee un balance perfecto: las ondas persisten el tiempo suficiente para generar interferencias (patrones de Moiré) al chocar con las paredes periódicas, pero se disipan justo a tiempo para dejar espacio visual al próximo transitorio de la canción.
+
+\end{document}
