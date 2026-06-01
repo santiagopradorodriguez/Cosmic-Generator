@@ -193,7 +193,8 @@ class MotorFX:
     def feedback_temporal(self, current_frame, decay=0.92):
         # Convertimos el frame actual a float32 para acumulación HDR real
         curr_32 = current_frame.astype(np.float32)
-        blend = cv2.addWeighted(curr_32, 1.0, self.prev_frame, decay, 0)
+        # Combinar ambos trucos: np.maximum evita suma explosiva, Tone Mapping da el toque cinemático
+        blend = np.maximum(curr_32, self.prev_frame * decay)
         self.prev_frame = blend # Conservar float32
         
         # --- LUMA TONE MAPPING HDR ---
@@ -218,8 +219,8 @@ class MotorFX:
         M = cv2.getRotationMatrix2D(center, 0, zoom)
         prev_zoomed = cv2.warpAffine(self.prev_frame, M, (w, h), borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
         
-        # Acumulación HDR pura
-        blend = cv2.addWeighted(curr_32, 1.0, prev_zoomed, decay, 0)
+        # Combinar ambos trucos: np.maximum limita la luz extra
+        blend = np.maximum(curr_32, prev_zoomed * decay)
         self.prev_frame = blend
         
         # --- LUMA TONE MAPPING HDR ---
