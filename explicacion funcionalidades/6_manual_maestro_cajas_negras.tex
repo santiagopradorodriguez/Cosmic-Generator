@@ -1,0 +1,93 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
+\section{El Puente Físico-Sonoro: Destruyendo la Caja Negra}
+
+Este documento revela el mecanismo exacto, a nivel matemático y de código, mediante el cual las señales de audio se inyectan en los cinco motores físicos del Cosmic-Generator. No hay magia ni cajas negras; hay un mapeo directo y determinista entre el análisis de la señal y las ecuaciones diferenciales parciales.
+
+\subsection{Extracción de Parámetros de Audio}
+Para cada fotograma (típicamente a 30 o 60 FPS), el sistema procesa una ventana de la señal de audio de entrada y extrae un vector de características espectrales y temporales. Estas variables de control se normalizan y se aplican filtros de suavizado antes de integrarse en los métodos numéricos.
+
+\begin{itemize}
+    \item \textbf{Amplitud (RMS) -- $A(t)$:} Representa la energía global instantánea. Controla variables macroscópicas, inyecciones de energía de fondo y tasas de alimentación.
+    \item \textbf{Flujo Espectral (Spectral Flux) -- $S(t)$:} Mide los cambios abruptos de energía entre frames (transitorios, golpes de percusión). Se usa para inyectar perturbaciones impulsivas y forzamientos abruptos.
+    \item \textbf{Tonalidad / Centroide Espectral -- $T(t)$:} Representa el `color' o brillo del sonido. Modula propiedades intrínsecas del medio, como coeficientes de difusión, repulsión o velocidad de onda.
+\end{itemize}
+
+\subsection{Motor 1: Reacción-Difusión (Gray-Scott / Corrosión)}
+El motor Gray-Scott simula la interacción química de dos sustancias, $u$ y $v$, generando laberintos, células y patrones de Turing. Las ecuaciones que evolucionamos son:
+\begin{align*}
+\frac{\partial u}{\partial t} &= D_u \nabla^2 u - u v^2 + f(t)(1 - u) \\
+\frac{\partial v}{\partial t} &= D_v \nabla^2 v + u v^2 - (f(t) + k(t)) v
+\end{align*}
+
+\textbf{Inyección de Audio:}
+Las constantes $f$ y $k$, que en la formulación original dictan la `especie' del patrón, mutan dinámicamente con el audio:
+\begin{itemize}
+    \item \textbf{Tasa de Alimentación (Feed Rate, $f$):} La amplitud $A(t)$ incrementa la tasa $f$. Un sonido denso introduce más químico $u$, hinchando los patrones hasta volverlos expansivos e interconectados.
+    $$f(t) = f_{base} + \alpha_f A(t)$$
+    \item \textbf{Tasa de Mortalidad (Kill Rate, $k$):} Se perturba negativamente con los golpes rítmicos ($S(t)$). Un `kick' disminuye momentáneamente $k$, provocando explosiones celulares rápidas.
+    $$k(t) = k_{base} - \alpha_k S(t)$$
+\end{itemize}
+
+\subsection{Motor 2: Kuramoto-Sivashinsky (Fuego / Caos Espacial)}
+Este motor modela inestabilidades de propagación de frentes (como llamas) exhibiendo turbulencia espacio-temporal. La ecuación escalar modificada es:
+\begin{equation}
+\frac{\partial u}{\partial t} + \nu \nabla^4 u + \mu(t) \nabla^2 u + \frac{1}{2}|\nabla u|^2 = F(x, y, t)
+\end{equation}
+
+\textbf{Inyección de Audio:}
+\begin{itemize}
+    \item \textbf{Coeficiente de Inestabilidad ($\mu$):} La amplitud o intensidad de los graves aumenta el coeficiente $\mu$, inyectando energía en longitudes de onda largas y provocando que el `fuego' se vuelva más turbulento y desordenado.
+    $$\mu(t) = \mu_0 + \alpha_\mu A(t)$$
+    \item \textbf{Forzamiento Espacial ($F$):} Los transitorios $S(t)$ activan mapas de ruido espacial en instantes puntuales, actuando como inyecciones o `chispas' que alimentan el campo escalar localizado, perturbando la ecuación bruscamente.
+\end{itemize}
+
+\subsection{Motor 3: Gross-Pitaevskii (Cuántico / Superfluido)}
+Describe el comportamiento microscópico de un condensado de Bose-Einstein o de un superfluido, modelado sobre una función de onda compleja $\psi$.
+\begin{equation}
+i\hbar \frac{\partial \psi}{\partial t} = \left( -\frac{\hbar^2}{2m}\nabla^2 + V(\mathbf{x}, t) + g(t)|\psi|^2 \right)\psi
+\end{equation}
+
+\textbf{Inyección de Audio:}
+\begin{itemize}
+    \item \textbf{Potencial Externo ($V$):} El audio genera un campo topológico sobre el lienzo. La intensidad global $A(t)$ modula la profundidad o barreras del potencial atrapando o liberando el fluido cuántico en zonas de alta densidad energética visual.
+    \item \textbf{Constante de Auto-Interacción ($g$):} Se asocia a la Tonalidad o Centroide $T(t)$. Si el sonido tiene frecuencias predominantemente agudas, el coeficiente $g$ se vuelve más repulsivo (o menos atractivo), alterando el tamaño y la velocidad de nucleación de los vórtices cuánticos.
+\end{itemize}
+
+\subsection{Motor 4: Onda Clásica}
+Simula la propagación de deformaciones transversales en una malla 2D ideal (análogo al parche de un tambor).
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} = c(t)^2 \nabla^2 u - \gamma(t) \frac{\partial u}{\partial t} + P(\mathbf{x}, t)
+\end{equation}
+
+\textbf{Inyección de Audio:}
+\begin{itemize}
+    \item \textbf{Velocidad de Propagación ($c$):} Se vuelve una función dinámica ligada a la frecuencia fundamental del audio. Sonidos más agudos `tensan' el medio virtual, acelerando la velocidad de fase $c$.
+    \item \textbf{Amortiguamiento ($\gamma$):} La amplitud sostenida reduce el rozamiento interno. Un drone musical provoca que las ondas perduren en el espacio; el silencio incrementa el amortiguamiento limpiando el lienzo.
+    \item \textbf{Excitación ($P$):} Golpes rítmicos mapean fuerza pura en coordenadas específicas, emitiendo verdaderas frentes de onda en sincronía.
+\end{itemize}
+
+\subsection{Motor 5: Korteweg-de Vries (KdV / Tsunamis, Solitones)}
+La ecuación KdV (o su extensión 2D Kadomtsev-Petviashvili) permite la emergencia de solitones, donde el empinamiento no lineal balancea exactamente la dispersión de las ondas.
+\begin{equation}
+\frac{\partial u}{\partial t} + \alpha(t) u \frac{\partial u}{\partial x} + \beta(t) \frac{\partial^3 u}{\partial x^3} = 0
+\end{equation}
+
+\textbf{Inyección de Audio:}
+\begin{itemize}
+    \item \textbf{Efecto No Lineal ($\alpha$):} Está directamente controlado por la energía RMS de la señal de audio. Al incrementarse el volumen general, $\alpha$ crece desproporcionadamente, provocando que los frentes de onda se empinen formando picos afilados o estructuras tipo `tsunami'.
+    $$\alpha(t) = \alpha_{base} \cdot (1 + \lambda_A A(t))$$
+    \item \textbf{Efecto Dispersivo ($\beta$):} Responde al perfil espectral $T(t)$. Frecuencias muy agudas y brillantes aumentan el término dispersivo diferencial, dividiendo grandes frentes de onda en un tren múltiple de solitones de alta frecuencia.
+\end{itemize}
+
+\vspace{0.5cm}
+\textbf{Conclusión:}
+En Cosmic-Generator, el audio no actúa como un mero filtro visual en etapa de post-procesamiento. Las propiedades rítmicas, dinámicas y armónicas de la música se convierten en perturbaciones, coeficientes no lineales y tasas de propagación insertadas directamente en los integradores Euler, Runge-Kutta de 4to orden y esquemas de Diferencias Finitas (FDTD). La música rediseña las leyes físicas del universo por cada $\Delta t$.
+
+\end{document}
