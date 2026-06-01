@@ -91,7 +91,7 @@ except Exception as e:
 
 # Barra lateral (Sidebar)
 with st.sidebar:
-    st.image("logo.jpg", width=180) # Logo oficial (Nihil Morari)
+    st.image("Gemini_Generated_Image_g87n7hg87n7hg87n.png", width=180) # Logo oficial
     st.title("Cosmic Generator")
     st.markdown("---")
     
