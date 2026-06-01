@@ -5,9 +5,17 @@
 
 Aquí no hay barreras de presupuesto: creemos firmemente que todo artista emergente tiene derecho a un videoclip espectacular. ¡Democratizar el arte es nuestra misión!
 
-## 🚀 Características (Actualizadas V2.1)
-- **Cromestesia Global (NUEVO):** La IA extrae la "Tonalidad Reina" absoluta de la canción y fuerza una Paleta de Color Sinestésica Emocional a todo el video.
-- **Sinestesia Multi-Stems (NUEVO):** Integración con redes neuronales de aislamiento acústico. El caos físico responde a la batería, el arte matemático responde a los sintetizadores y la rotación al bajo.
+## 🚀 Novedades Épicas: Versión 2.0 (Streamlit Beta)
+¡La revolución visual evoluciona! Nuestra nueva versión trae herramientas que elevan el estándar de democratización del arte:
+- **Santuario "Nihil Morari" (NUEVO):** La UI ahora cuenta con una pestaña promocional oficial celebrando el álbum "Nihil Morari", incluyendo su imponente arte y un enlace directo a Bandcamp. ¡Nuestra raíz artística!
+- **Luma Tone Mapping HDR (NUEVO):** Incorporado en el Modo Mix para la retroalimentación analógica. Evitamos que la energía sature la pantalla a blanco intenso, logrando una gradación de colores verdaderamente cinemática y profunda.
+- **Alineación Forzada Absoluta (Forced Alignment):** En el menú de letras, hemos roto la dependencia de los errores ortográficos de la IA. ¡Pega tu letra oficial exacta y deja que nuestro motor calcule milimétricamente el tiempo de cada sílaba!
+- **Barra de Progreso Fluida:** Monitorea la magia del Forced Alignment a través de una barra de carga rediseñada en la UI que fluye en sintonía con el algoritmo.
+- **Destellos y Bloom Suavizados:** Vinculados al bombo (kick), hemos optimizado los efectos lumínicos. Disfruta del impacto brutal de las explosiones de energía protegiendo la retina de tus espectadores. ¡Caos responsable sin perder agresividad!
+
+## ⚡ Características Centrales
+- **Cromestesia Global:** La IA extrae la "Tonalidad Reina" absoluta de la canción y fuerza una Paleta de Color Sinestésica Emocional a todo el video.
+- **Sinestesia Multi-Stems:** Integración con redes neuronales de aislamiento acústico. El caos físico responde a la batería, el arte matemático responde a los sintetizadores y la rotación al bajo.
 - **Modularidad:** Motores separados por ramas estables (Fluidos, Automatas Celulares) y experimentales (Redes Neuronales CPPN, Caos 3D Lorenz, Fractales IFS).
 - **Director de IA:** Analiza la pista de audio y selecciona la estética visual y los parámetros mediante IA.
 - **Interfaz Streamlit Neón:** Una interfaz fácil e intuitiva con estilo Cyberpunk/Spotify para una experiencia de usuario fluida.

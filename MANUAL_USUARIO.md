@@ -8,8 +8,9 @@ Este documento es la guía definitiva para operar el **Launcher** (`lanzador.py`
 
 El `lanzador.py` es el centro de control de todo el proyecto. Desde aquí configuras y ejecutas los renders.
 
-### 1. 🧠 Director IA (Panel Superior)
-Aquí interactúas con el cerebro del sistema.
+### 1. 🧠 Director IA y Pestaña Oficial (Panel Superior)
+Aquí interactúas con el cerebro del sistema y la esencia de nuestra cooperativa.
+*   **Pestaña "Nihil Morari":** Una sección promocional dedicada a nuestro álbum estandarte. Encontrarás su arte conceptual inmersivo y el enlace directo a Bandcamp. ¡Nuestra música es la que inspira el motor!
 *   **Entrada de Texto:** Escribe qué quieres ver (ej. "Un océano de neón con tormenta").
 *   **Micrófono (🎤):** Dicta tu idea por voz. Requiere conexión a internet para Google Speech Recognition.
 *   **Botón `✨ APLICAR ESTILO`:** Envía tu descripción a la IA local (Llama 3.2) para que configure los motores automáticamente.
@@ -25,10 +26,11 @@ Aquí interactúas con el cerebro del sistema.
 Control manual de los algoritmos.
 *   **Motores (GS, KS, WAVE...):** Determina qué simulaciones están permitidas en el "God Mode".
 *   **Seed:** Número semilla para el generador aleatorio. Si usas el mismo Seed, obtendrás exactamente el mismo video.
-*   **Estilos Especiales:**
+*   **Estilos Especiales (Optimizados en V2.0):**
     *   `👻 Espíritus`: Activa entidades procedurales que bailan.
     *   `🔮 Caleido`: Activa simetría radial (mandalas).
-    *   `⚡ Flash`: Permite destellos blancos fuertes con los golpes (Cuidado: Epilepsia).
+    *   `⚡ Flash y Bloom (Suavizados)`: Vinculado al bombo (kick). Hemos afinado la fotometría para mantener el impacto visual pero protegiendo los ojos de los espectadores.
+    *   `🎬 Luma Tone Mapping HDR (Modo Mix)`: ¡Novedad absoluta! Mantiene los colores en rangos cinemáticos durante la retroalimentación analógica, impidiendo el quemado de blancos.
     *   `🎨 Nota`: Activa la **Cromestesia** (el color cambia según la nota musical detectada).
 
 ### 4. 📂 Gestión de Archivos
@@ -36,6 +38,7 @@ Control manual de los algoritmos.
 *   `📦 MOVER VIDEOS`: Mueve todos los .mp4 generados a la carpeta `RENDERS/` para limpiar.
 *   `🧠 EXTRAER LETRA`: Usa Whisper para generar el archivo `.json` de tiempos.
 *   `📝 EDITAR LETRA`: Abre un editor visual para corregir tiempos y textos manualmente.
+*   `🔥 ALINEACIÓN FORZADA (Forced Alignment)`: ¡Nueva función! Pega tu letra oficial exacta para eludir los errores de transcripción de la IA. El motor calculará el tiempo en milisegundos de cada sílaba. Para mantenerte al tanto, la UI muestra una **Barra de Progreso Fluida** rediseñada.
 
 ---
 
