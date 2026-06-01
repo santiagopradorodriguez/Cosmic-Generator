@@ -37,7 +37,7 @@
 }
 \lstset{style=mystyle}
 
-\title{\Huge \textbf{Cosmic-Generator} \\ \vspace{0.5cm} \Huge \textbf{Manual de Usuario - Volumen 2} \\ \vspace{1cm} \Large \textit{La Enciclopedia Cósmica: Teoría, Código y Caos}}
+\title{\Huge \textbf{Cosmic-Generator} \\ \vspace{0.5cm} \Huge \textbf{Manual de Usuario - Volumen 2} \\ \vspace{1cm} \Large \textit{La Enciclopedia Cósmica: Edición Auténtica}}
 \author{Cooperativa Central: Rebeldía Cósmica}
 \date{\today}
 
@@ -52,28 +52,9 @@
 La teoría de los sistemas complejos estudia cómo las interacciones entre partes simples dan lugar a comportamientos colectivos emergentes, impredecibles a partir de las propiedades individuales. En el contexto de \textbf{Cosmic-Generator}, empleamos ecuaciones diferenciales parciales (EDPs) no lineales para modelar dinámicas de fluidos, fuego, ecosistemas bacterianos y fenómenos cuánticos.
 
 \section{El Surgimiento del Caos Determinista}
-El caos determinista es un fenómeno en el cual sistemas dinámicos que están gobernados por leyes matemáticas estrictas y sin componentes aleatorios exhiben comportamientos impredecibles a largo plazo debido a su extrema sensibilidad a las condiciones iniciales. Este efecto, popularmente conocido como el "Efecto Mariposa", fue documentado rigurosamente por Edward Lorenz en 1963 mientras modelaba la convección atmosférica. 
+El caos determinista es un fenómeno en el cual sistemas dinámicos que están gobernados por leyes matemáticas estrictas y sin componentes aleatorios exhiben comportamientos impredecibles a largo plazo debido a su extrema sensibilidad a las condiciones iniciales. Este efecto, popularmente conocido como el "Efecto Mariposa", fue documentado rigurosamente por Edward Lorenz en 1963. 
 
-En nuestro motor, implementamos precisamente el Atractor de Lorenz como el latido invisible que empuja las capas ocultas de nuestra red neuronal, logrando que el arte generativo nunca se repita exactamente igual, a pesar de estar estrictamente acoplado al espectro de audio. Las ecuaciones de Lorenz son:
-
-\begin{align}
-\frac{dx}{dt} &= \sigma(y - x) \\
-\frac{dy}{dt} &= x(\rho - z) - y \\
-\frac{dz}{dt} &= xy - \beta z
-\end{align}
-
-\section{Reacción-Difusión y la Morfogénesis de Turing}
-Alan Turing postuló en 1952 que un sistema de sustancias químicas reaccionando y difundiendo en un espacio podía generar patrones espacialmente periódicos a partir de un estado homogéneo debido a la inestabilidad. En Cosmic-Generator usamos el modelo Gray-Scott para materializar esta visión, inyectando audio para desestabilizar continuamente el medio.
-
-
-
-\chapter{Introducción a los Sistemas Complejos}
-La teoría de los sistemas complejos estudia cómo las interacciones entre partes simples dan lugar a comportamientos colectivos emergentes, impredecibles a partir de las propiedades individuales. En el contexto de \textbf{Cosmic-Generator}, empleamos ecuaciones diferenciales parciales (EDPs) no lineales para modelar dinámicas de fluidos, fuego, ecosistemas bacterianos y fenómenos cuánticos.
-
-\section{El Surgimiento del Caos Determinista}
-El caos determinista es un fenómeno en el cual sistemas dinámicos que están gobernados por leyes matemáticas estrictas y sin componentes aleatorios exhiben comportamientos impredecibles a largo plazo debido a su extrema sensibilidad a las condiciones iniciales. Este efecto, popularmente conocido como el "Efecto Mariposa", fue documentado rigurosamente por Edward Lorenz en 1963 mientras modelaba la convección atmosférica. 
-
-En nuestro motor, implementamos precisamente el Atractor de Lorenz como el latido invisible que empuja las capas ocultas de nuestra red neuronal, logrando que el arte generativo nunca se repita exactamente igual, a pesar de estar estrictamente acoplado al espectro de audio. Las ecuaciones de Lorenz son:
+En nuestro motor, implementamos precisamente el Atractor de Lorenz como el latido invisible que empuja las capas ocultas de nuestra red neuronal, logrando que el arte generativo nunca se repita exactamente igual. Las ecuaciones de Lorenz son:
 
 \begin{align}
 \frac{dx}{dt} &= \sigma(y - x) \\
@@ -82,99 +63,24 @@ En nuestro motor, implementamos precisamente el Atractor de Lorenz como el latid
 \end{align}
 
 \section{Reacción-Difusión y la Morfogénesis de Turing}
-Alan Turing postuló en 1952 que un sistema de sustancias químicas reaccionando y difundiendo en un espacio podía generar patrones espacialmente periódicos a partir de un estado homogéneo debido a la inestabilidad. En Cosmic-Generator usamos el modelo Gray-Scott para materializar esta visión, inyectando audio para desestabilizar continuamente el medio.
-
-
-
-\chapter{Introducción a los Sistemas Complejos}
-La teoría de los sistemas complejos estudia cómo las interacciones entre partes simples dan lugar a comportamientos colectivos emergentes, impredecibles a partir de las propiedades individuales. En el contexto de \textbf{Cosmic-Generator}, empleamos ecuaciones diferenciales parciales (EDPs) no lineales para modelar dinámicas de fluidos, fuego, ecosistemas bacterianos y fenómenos cuánticos.
-
-\section{El Surgimiento del Caos Determinista}
-El caos determinista es un fenómeno en el cual sistemas dinámicos que están gobernados por leyes matemáticas estrictas y sin componentes aleatorios exhiben comportamientos impredecibles a largo plazo debido a su extrema sensibilidad a las condiciones iniciales. Este efecto, popularmente conocido como el "Efecto Mariposa", fue documentado rigurosamente por Edward Lorenz en 1963 mientras modelaba la convección atmosférica. 
-
-En nuestro motor, implementamos precisamente el Atractor de Lorenz como el latido invisible que empuja las capas ocultas de nuestra red neuronal, logrando que el arte generativo nunca se repita exactamente igual, a pesar de estar estrictamente acoplado al espectro de audio. Las ecuaciones de Lorenz son:
-
-\begin{align}
-\frac{dx}{dt} &= \sigma(y - x) \\
-\frac{dy}{dt} &= x(\rho - z) - y \\
-\frac{dz}{dt} &= xy - \beta z
-\end{align}
-
-\section{Reacción-Difusión y la Morfogénesis de Turing}
-Alan Turing postuló en 1952 que un sistema de sustancias químicas reaccionando y difundiendo en un espacio podía generar patrones espacialmente periódicos a partir de un estado homogéneo debido a la inestabilidad. En Cosmic-Generator usamos el modelo Gray-Scott para materializar esta visión, inyectando audio para desestabilizar continuamente el medio.
-
-
-
-\chapter{Introducción a los Sistemas Complejos}
-La teoría de los sistemas complejos estudia cómo las interacciones entre partes simples dan lugar a comportamientos colectivos emergentes, impredecibles a partir de las propiedades individuales. En el contexto de \textbf{Cosmic-Generator}, empleamos ecuaciones diferenciales parciales (EDPs) no lineales para modelar dinámicas de fluidos, fuego, ecosistemas bacterianos y fenómenos cuánticos.
-
-\section{El Surgimiento del Caos Determinista}
-El caos determinista es un fenómeno en el cual sistemas dinámicos que están gobernados por leyes matemáticas estrictas y sin componentes aleatorios exhiben comportamientos impredecibles a largo plazo debido a su extrema sensibilidad a las condiciones iniciales. Este efecto, popularmente conocido como el "Efecto Mariposa", fue documentado rigurosamente por Edward Lorenz en 1963 mientras modelaba la convección atmosférica. 
-
-En nuestro motor, implementamos precisamente el Atractor de Lorenz como el latido invisible que empuja las capas ocultas de nuestra red neuronal, logrando que el arte generativo nunca se repita exactamente igual, a pesar de estar estrictamente acoplado al espectro de audio. Las ecuaciones de Lorenz son:
-
-\begin{align}
-\frac{dx}{dt} &= \sigma(y - x) \\
-\frac{dy}{dt} &= x(\rho - z) - y \\
-\frac{dz}{dt} &= xy - \beta z
-\end{align}
-
-\section{Reacción-Difusión y la Morfogénesis de Turing}
-Alan Turing postuló en 1952 que un sistema de sustancias químicas reaccionando y difundiendo en un espacio podía generar patrones espacialmente periódicos a partir de un estado homogéneo debido a la inestabilidad. En Cosmic-Generator usamos el modelo Gray-Scott para materializar esta visión, inyectando audio para desestabilizar continuamente el medio.
-
-
+Alan Turing postuló en 1952 que un sistema de sustancias químicas reaccionando y difundiendo en un espacio podía generar patrones espacialmente periódicos a partir de un estado homogéneo debido a la inestabilidad. En Cosmic-Generator usamos el modelo Gray-Scott para materializar esta visión, inyectando la energía del espectro de audio (RMS) en la tasa de alimentación del sustrato, para desestabilizar continuamente el medio al ritmo de la música.
 
 \chapter{Redes Neuronales Artificiales y CPPNs}
-Las Redes Neuronales Artificiales (ANNs) nacen de la inspiración biológica del cerebro humano. Sin embargo, en \textbf{Cosmic-Generator}, no utilizamos ANNs tradicionales para clasificación o regresión, sino \textbf{Compositional Pattern Producing Networks (CPPNs)}.
+Las Redes Neuronales Artificiales (ANNs) nacen de la inspiración biológica del cerebro humano. En \textbf{Cosmic-Generator}, empleamos una variante generativa altamente especializada: las \textbf{Compositional Pattern Producing Networks (CPPNs)}.
 
 \section{Arquitectura del Modo Neural (CPPN)}
-Una CPPN es una red neuronal generativa que mapea coordenadas espaciales $(x, y)$ a un valor de color (o densidad) en ese píxel. A diferencia de las redes convolucionales o perceptrones multicapa clásicos que usan la misma función de activación (ej. ReLU) en todas las neuronas, las CPPNs utilizan un cóctel de funciones matemáticas heterogéneas (seno, coseno, hiperbólicas, gaussianas). Esto permite que la red componga patrones que contienen simetría (debido al coseno), repetición (debido al seno) y estructuras centradas (debido a la gaussiana).
+Una CPPN es una red neuronal que mapea coordenadas espaciales $(x, y)$ a un valor de intensidad. A diferencia de un perceptrón multicapa clásico que usa la misma función de activación (ej. ReLU) en todas sus capas, una CPPN utiliza un cóctel de funciones matemáticas heterogéneas. Por ejemplo, incluye funciones sinusoidales para generar repeticiones periódicas (texturas), hiperbólicas para transiciones suaves, y funciones gaussianas para estructuras simétricas centradas.
 
-\section{El Modo Neural en Cosmic-Generator}
-Nuestro motor inicializa una CPPN con pesos completamente aleatorios. No hay fase de entrenamiento (Backpropagation). En lugar de ello, la red recibe como entrada las coordenadas normalizadas del lienzo, el radio respecto al centro, y el estado actual de un atractor de Lorenz tridimensional. La salida es una matriz de intensidades que se mapea a través de la \textit{Cromestesia} (la paleta de colores reactiva al tono de la música).
-
-
-
-\chapter{Redes Neuronales Artificiales y CPPNs}
-Las Redes Neuronales Artificiales (ANNs) nacen de la inspiración biológica del cerebro humano. Sin embargo, en \textbf{Cosmic-Generator}, no utilizamos ANNs tradicionales para clasificación o regresión, sino \textbf{Compositional Pattern Producing Networks (CPPNs)}.
-
-\section{Arquitectura del Modo Neural (CPPN)}
-Una CPPN es una red neuronal generativa que mapea coordenadas espaciales $(x, y)$ a un valor de color (o densidad) en ese píxel. A diferencia de las redes convolucionales o perceptrones multicapa clásicos que usan la misma función de activación (ej. ReLU) en todas las neuronas, las CPPNs utilizan un cóctel de funciones matemáticas heterogéneas (seno, coseno, hiperbólicas, gaussianas). Esto permite que la red componga patrones que contienen simetría (debido al coseno), repetición (debido al seno) y estructuras centradas (debido a la gaussiana).
-
-\section{El Modo Neural en Cosmic-Generator}
-Nuestro motor inicializa una CPPN con pesos completamente aleatorios. No hay fase de entrenamiento (Backpropagation). En lugar de ello, la red recibe como entrada las coordenadas normalizadas del lienzo, el radio respecto al centro, y el estado actual de un atractor de Lorenz tridimensional. La salida es una matriz de intensidades que se mapea a través de la \textit{Cromestesia} (la paleta de colores reactiva al tono de la música).
-
-
-
-\chapter{Redes Neuronales Artificiales y CPPNs}
-Las Redes Neuronales Artificiales (ANNs) nacen de la inspiración biológica del cerebro humano. Sin embargo, en \textbf{Cosmic-Generator}, no utilizamos ANNs tradicionales para clasificación o regresión, sino \textbf{Compositional Pattern Producing Networks (CPPNs)}.
-
-\section{Arquitectura del Modo Neural (CPPN)}
-Una CPPN es una red neuronal generativa que mapea coordenadas espaciales $(x, y)$ a un valor de color (o densidad) en ese píxel. A diferencia de las redes convolucionales o perceptrones multicapa clásicos que usan la misma función de activación (ej. ReLU) en todas las neuronas, las CPPNs utilizan un cóctel de funciones matemáticas heterogéneas (seno, coseno, hiperbólicas, gaussianas). Esto permite que la red componga patrones que contienen simetría (debido al coseno), repetición (debido al seno) y estructuras centradas (debido a la gaussiana).
-
-\section{El Modo Neural en Cosmic-Generator}
-Nuestro motor inicializa una CPPN con pesos completamente aleatorios. No hay fase de entrenamiento (Backpropagation). En lugar de ello, la red recibe como entrada las coordenadas normalizadas del lienzo, el radio respecto al centro, y el estado actual de un atractor de Lorenz tridimensional. La salida es una matriz de intensidades que se mapea a través de la \textit{Cromestesia} (la paleta de colores reactiva al tono de la música).
-
-
-
-\chapter{Redes Neuronales Artificiales y CPPNs}
-Las Redes Neuronales Artificiales (ANNs) nacen de la inspiración biológica del cerebro humano. Sin embargo, en \textbf{Cosmic-Generator}, no utilizamos ANNs tradicionales para clasificación o regresión, sino \textbf{Compositional Pattern Producing Networks (CPPNs)}.
-
-\section{Arquitectura del Modo Neural (CPPN)}
-Una CPPN es una red neuronal generativa que mapea coordenadas espaciales $(x, y)$ a un valor de color (o densidad) en ese píxel. A diferencia de las redes convolucionales o perceptrones multicapa clásicos que usan la misma función de activación (ej. ReLU) en todas las neuronas, las CPPNs utilizan un cóctel de funciones matemáticas heterogéneas (seno, coseno, hiperbólicas, gaussianas). Esto permite que la red componga patrones que contienen simetría (debido al coseno), repetición (debido al seno) y estructuras centradas (debido a la gaussiana).
-
-\section{El Modo Neural en Cosmic-Generator}
-Nuestro motor inicializa una CPPN con pesos completamente aleatorios. No hay fase de entrenamiento (Backpropagation). En lugar de ello, la red recibe como entrada las coordenadas normalizadas del lienzo, el radio respecto al centro, y el estado actual de un atractor de Lorenz tridimensional. La salida es una matriz de intensidades que se mapea a través de la \textit{Cromestesia} (la paleta de colores reactiva al tono de la música).
-
-
+\section{El Modo Neural en Acción}
+Nuestro motor inicializa una CPPN de 4 capas ocultas (con 32 neuronas cada una) utilizando pesos completamente aleatorios. No existe una fase de entrenamiento (Backpropagation). En lugar de ello, la red recibe un tensor de entrada de 6 dimensiones: las coordenadas normalizadas del lienzo, la distancia euclidiana al centro (radio), y las coordenadas tridimensionales $(lx, ly, lz)$ del atractor de Lorenz actual.
 \part{Ingeniería de Código: Discretizaciones y Fronteras}
 
 
 \chapter{Discretizaciones Espaciales}
-Para simular el universo continuo en una cuadrícula de píxeles, debemos discretizar los operadores diferenciales continuos (como el Laplaciano $\nabla^2$).
+Para simular el continuo universo de las ecuaciones diferenciales en una cuadrícula discreta de píxeles en la pantalla, debemos discretizar los operadores continuos como el Laplaciano ($\nabla^2$).
 
 \section{El Laplaciano Isotrópico}
-En \texttt{nucleo\_visual.py}, usamos un stencil (matriz de convolución) de 9 puntos para aproximar el Laplaciano con simetría isotrópica, vital para que los fluidos no parezcan "cuadrados" en la pantalla.
+En el archivo \texttt{nucleo\_visual.py}, empleamos un stencil de convolución de 9 puntos espaciales para aproximar el operador Laplaciano con simetría isotrópica perfecta. Esto evita los artefactos diagonales típicos de los motores de física de 8-bits.
 \begin{lstlisting}[language=Python]
 # Stencil de 9 puntos (Laplaciano Isotropico ESCALADO espacialmente)
 dx_g = 1.2 # Mayor a 1 = Estructuras mas grandes y suaves
@@ -182,98 +88,51 @@ lap_u = (0.8 * (U[r+1, c] + U[r-1, c] + U[r, c+1] + U[r, c-1]) +
          0.2 * (U[r+1, c+1] + U[r+1, c-1] + U[r-1, c+1] + U[r-1, c-1]) - 
          4.0 * U[r, c]) / (dx_g**2)
 \end{lstlisting}
-El parámetro \texttt{dx\_g = 1.2} expande la grilla computacional, permitiendo formas visuales mucho más orgánicas. Un stencil clásico de 5 puntos produciría artefactos diagonales.
+El parámetro crítico aquí es \texttt{dx\_g = 1.2}. Al escalar el denominador artificialmente, "engañamos" a las matemáticas haciéndoles creer que los píxeles están más separados físicamente, lo que engrosa las estructuras de Turing haciéndolas mucho más atractivas visualmente en monitores HD.
 
 \section{Condiciones de Frontera}
-El universo simulado debe tener bordes. Si las partículas o las ondas alcanzan el borde del arreglo bidimensional, ¿qué sucede?
-En Cosmic-Generator usamos \textbf{Condiciones de Frontera de Dirichlet Homogéneas} en el Kuramoto-Sivashinsky:
-\begin{lstlisting}[language=Python]
+El universo simulado es finito. Para gestionar qué ocurre cuando las perturbaciones acústicas llegan a los bordes de la matriz, utilizamos dos estrategias distintas:
+\begin{itemize}
+    \item \textbf{Fronteras de Dirichlet Cero (Motor de Fuego):} 
+    \begin{lstlisting}[language=Python]
 out_u[0:2, :] = 0; out_u[-2:, :] = 0
 out_u[:, 0:2] = 0; out_u[:, -2:] = 0
-\end{lstlisting}
-Esto obliga a la turbulencia a morir en los bordes de la pantalla. Por el contrario, en los integradores pseudo-espectrales usamos \textbf{Condiciones Periódicas} implícitas a través de la Transformada Rápida de Fourier (FFT), lo que causa que lo que sale por la izquierda de la pantalla reaparezca por la derecha, como un toroide.
-
-
-
-\chapter{Discretizaciones Espaciales}
-Para simular el universo continuo en una cuadrícula de píxeles, debemos discretizar los operadores diferenciales continuos (como el Laplaciano $\nabla^2$).
-
-\section{El Laplaciano Isotrópico}
-En \texttt{nucleo\_visual.py}, usamos un stencil (matriz de convolución) de 9 puntos para aproximar el Laplaciano con simetría isotrópica, vital para que los fluidos no parezcan "cuadrados" en la pantalla.
-\begin{lstlisting}[language=Python]
-# Stencil de 9 puntos (Laplaciano Isotropico ESCALADO espacialmente)
-dx_g = 1.2 # Mayor a 1 = Estructuras mas grandes y suaves
-lap_u = (0.8 * (U[r+1, c] + U[r-1, c] + U[r, c+1] + U[r, c-1]) + 
-         0.2 * (U[r+1, c+1] + U[r+1, c-1] + U[r-1, c+1] + U[r-1, c-1]) - 
-         4.0 * U[r, c]) / (dx_g**2)
-\end{lstlisting}
-El parámetro \texttt{dx\_g = 1.2} expande la grilla computacional, permitiendo formas visuales mucho más orgánicas. Un stencil clásico de 5 puntos produciría artefactos diagonales.
-
-\section{Condiciones de Frontera}
-El universo simulado debe tener bordes. Si las partículas o las ondas alcanzan el borde del arreglo bidimensional, ¿qué sucede?
-En Cosmic-Generator usamos \textbf{Condiciones de Frontera de Dirichlet Homogéneas} en el Kuramoto-Sivashinsky:
-\begin{lstlisting}[language=Python]
-out_u[0:2, :] = 0; out_u[-2:, :] = 0
-out_u[:, 0:2] = 0; out_u[:, -2:] = 0
-\end{lstlisting}
-Esto obliga a la turbulencia a morir en los bordes de la pantalla. Por el contrario, en los integradores pseudo-espectrales usamos \textbf{Condiciones Periódicas} implícitas a través de la Transformada Rápida de Fourier (FFT), lo que causa que lo que sale por la izquierda de la pantalla reaparezca por la derecha, como un toroide.
-
-
+    \end{lstlisting}
+    En la ecuación Kuramoto-Sivashinsky, matamos la turbulencia asignando el valor 0 en los márgenes. Esto contiene el fuego dentro de la pantalla, evitando oscilaciones en los bordes.
+    
+    \item \textbf{Fronteras Periódicas (Motores Cuánticos):} En el simulador espectral (\texttt{nucleo\_espectral.py}), la naturaleza de la Transformada Rápida de Fourier (FFT) impone implícitamente condiciones periódicas en los bordes (lo que sale por la derecha, entra por la izquierda), transformando la matriz en un toroide espacial bidimensional.
+\end{itemize}
 
 \chapter{Seguridad Numérica: Parches Anti-Clipping}
-La inyección constante de energía del audio (RMS, graves) puede sobreexcitar el sistema y causar \textbf{Overflows Numéricos (Clipping)} donde los valores explotan hacia el infinito (Not a Number - NaN). Para prevenir esto, los programadores implementaron diversas técnicas de estabilización.
+La inyección dinámica de los graves musicales (RMS y Transitorios) introduce perturbaciones masivas de energía externa dentro de sistemas dinámicos cerrados, lo que matemáticamente garantiza el riesgo de Overflows (valores tendiendo a Infinito o NaN).
 
-\section{El Parche Tanh en Kuramoto-Sivashinsky}
-La ecuación Kuramoto-Sivashinsky es extremadamente inestable debido al término de gradiente al cuadrado no lineal ($-0.5 |\nabla u|^2$). Para evitar su explosión bajo bombos fuertes de audio, aplicamos un "suavizado" asintótico usando la tangente hiperbólica:
+\section{Estabilización Asintótica en la Ecuación KS}
+La ecuación de Fuego turbulento (Kuramoto-Sivashinsky) contiene un término no-lineal peligroso: $-0.5 |\nabla u|^2$. Un golpe de bombo de alta amplitud puede disparar el gradiente, causando que el paso de integración explícita de Euler explote. Para solucionar esto, aplicamos un "Parche Anti-Clipping" basado en la tangente hiperbólica:
 \begin{lstlisting}[language=Python]
 # Estabilidad KS: Clamping suave con tanh (evita bloqueos numericos)
 val = np.tanh(val / 20.0) * 20.0
 \end{lstlisting}
-Esto restringe físicamente el campo escalar a un rango seguro de $[-20, 20]$, preservando la derivada en el rango lineal (cerca de cero) y frenando el escape exponencial.
+Al escalar y aplicar \texttt{np.tanh()}, aseguramos que las oscilaciones sigan comportándose linealmente cerca del origen (el comportamiento fluido normal), pero se vean frenadas asintóticamente si intentan sobrepasar la barrera crítica de $\pm 20.0$, logrando una simulación indomable pero inmune a crashes.
 
-\section{Clamping Duro en Reacción-Difusión}
-Para los modelos químicos como Gray-Scott, las concentraciones de químicos ($U$ y $V$) no pueden existir físicamente por debajo de 0 o por encima de 1.
+\section{Saturación Dura en Reacción-Difusión}
+Para los modelos químicos (Gray-Scott), la concentración del reactivo $U$ o del producto $V$ es estrictamente física: no pueden existir valores negativos, ni concentraciones superiores al 100\% (1.0).
 \begin{lstlisting}[language=Python]
-# Clamping seguro
+# Clamping seguro estricto
 if val_u > 1.0: val_u = 1.0
 elif val_u < 0.0: val_u = 0.0
-if val_v > 1.0: val_v = 1.0
-elif val_v < 0.0: val_v = 0.0
 \end{lstlisting}
+Cortar la señal abruptamente en $0.0$ y $1.0$ actúa como un limitador analógico implacable contra los impulsos externos de la música.
 
+\chapter{Análisis del Código: Integración del Modo Neural}
+Para finalizar, documentamos el corazón del motor \texttt{CPPNEngine}. Este código no usa librerías pesadas como TensorFlow o PyTorch, sino pura multiplicación de matrices vectorizadas (Numpy) para lograr cientos de Fotogramas Por Segundo (FPS) en la CPU.
 
-
-\chapter{Seguridad Numérica: Parches Anti-Clipping}
-La inyección constante de energía del audio (RMS, graves) puede sobreexcitar el sistema y causar \textbf{Overflows Numéricos (Clipping)} donde los valores explotan hacia el infinito (Not a Number - NaN). Para prevenir esto, los programadores implementaron diversas técnicas de estabilización.
-
-\section{El Parche Tanh en Kuramoto-Sivashinsky}
-La ecuación Kuramoto-Sivashinsky es extremadamente inestable debido al término de gradiente al cuadrado no lineal ($-0.5 |\nabla u|^2$). Para evitar su explosión bajo bombos fuertes de audio, aplicamos un "suavizado" asintótico usando la tangente hiperbólica:
-\begin{lstlisting}[language=Python]
-# Estabilidad KS: Clamping suave con tanh (evita bloqueos numericos)
-val = np.tanh(val / 20.0) * 20.0
-\end{lstlisting}
-Esto restringe físicamente el campo escalar a un rango seguro de $[-20, 20]$, preservando la derivada en el rango lineal (cerca de cero) y frenando el escape exponencial.
-
-\section{Clamping Duro en Reacción-Difusión}
-Para los modelos químicos como Gray-Scott, las concentraciones de químicos ($U$ y $V$) no pueden existir físicamente por debajo de 0 o por encima de 1.
-\begin{lstlisting}[language=Python]
-# Clamping seguro
-if val_u > 1.0: val_u = 1.0
-elif val_u < 0.0: val_u = 0.0
-if val_v > 1.0: val_v = 1.0
-elif val_v < 0.0: val_v = 0.0
-\end{lstlisting}
-
-
-
-\chapter{Análisis del Código: Modo Neural (CPPN)}
-A continuación, diseccionamos la red neuronal implementada en NumPy sin frameworks de Deep Learning, maximizando el rendimiento por ciclo de reloj.
 \begin{lstlisting}[language=Python]
 def _step_lorenz(self, dt=0.01):
     # Resolver inestabilidad de Euler mediante sub-pasos dinamicos
     num_steps = int(max(1, dt / 0.005))
     sub_dt = dt / num_steps
     sigma, rho, beta = 10.0, 28.0, 8.0/3.0
+    
     for _ in range(num_steps):
         x, y, z = self.lorenz_state
         dx = sigma * (y - x) * sub_dt
@@ -283,57 +142,13 @@ def _step_lorenz(self, dt=0.01):
         
         # Clip de seguridad hiper-estricto para evitar Overflow/NaN
         self.lorenz_state = np.clip(self.lorenz_state, -100.0, 100.0)
-    return self.lorenz_state / 20.0 # Normalizado a rango latente estable
-\end{lstlisting}
-Aquí observamos cómo la métrica del audio (\texttt{dt} se escala con \texttt{audio\_z}) acelera o frena el tiempo del universo de Lorenz, y usamos sub-pasos (integración adaptativa manual) para evitar la explosión de Euler si el bombo de la música es demasiado violento.
-
-
-
-\chapter{Análisis del Código: Modo Neural (CPPN)}
-A continuación, diseccionamos la red neuronal implementada en NumPy sin frameworks de Deep Learning, maximizando el rendimiento por ciclo de reloj.
-\begin{lstlisting}[language=Python]
-def _step_lorenz(self, dt=0.01):
-    # Resolver inestabilidad de Euler mediante sub-pasos dinamicos
-    num_steps = int(max(1, dt / 0.005))
-    sub_dt = dt / num_steps
-    sigma, rho, beta = 10.0, 28.0, 8.0/3.0
-    for _ in range(num_steps):
-        x, y, z = self.lorenz_state
-        dx = sigma * (y - x) * sub_dt
-        dy = (x * (rho - z) - y) * sub_dt
-        dz = (x * y - beta * z) * sub_dt
-        self.lorenz_state += np.array([dx, dy, dz])
         
-        # Clip de seguridad hiper-estricto para evitar Overflow/NaN
-        self.lorenz_state = np.clip(self.lorenz_state, -100.0, 100.0)
     return self.lorenz_state / 20.0 # Normalizado a rango latente estable
 \end{lstlisting}
-Aquí observamos cómo la métrica del audio (\texttt{dt} se escala con \texttt{audio\_z}) acelera o frena el tiempo del universo de Lorenz, y usamos sub-pasos (integración adaptativa manual) para evitar la explosión de Euler si el bombo de la música es demasiado violento.
 
-
-
-\chapter{Análisis del Código: Modo Neural (CPPN)}
-A continuación, diseccionamos la red neuronal implementada en NumPy sin frameworks de Deep Learning, maximizando el rendimiento por ciclo de reloj.
-\begin{lstlisting}[language=Python]
-def _step_lorenz(self, dt=0.01):
-    # Resolver inestabilidad de Euler mediante sub-pasos dinamicos
-    num_steps = int(max(1, dt / 0.005))
-    sub_dt = dt / num_steps
-    sigma, rho, beta = 10.0, 28.0, 8.0/3.0
-    for _ in range(num_steps):
-        x, y, z = self.lorenz_state
-        dx = sigma * (y - x) * sub_dt
-        dy = (x * (rho - z) - y) * sub_dt
-        dz = (x * y - beta * z) * sub_dt
-        self.lorenz_state += np.array([dx, dy, dz])
-        
-        # Clip de seguridad hiper-estricto para evitar Overflow/NaN
-        self.lorenz_state = np.clip(self.lorenz_state, -100.0, 100.0)
-    return self.lorenz_state / 20.0 # Normalizado a rango latente estable
-\end{lstlisting}
-Aquí observamos cómo la métrica del audio (\texttt{dt} se escala con \texttt{audio\_z}) acelera o frena el tiempo del universo de Lorenz, y usamos sub-pasos (integración adaptativa manual) para evitar la explosión de Euler si el bombo de la música es demasiado violento.
-
-
+Notamos dos innovaciones profundas: 
+1. El parámetro de tiempo \texttt{dt} es dictado por \texttt{audio\_z} (una combinación de la amplitud y frecuencia de la música actual). Cuando el bombo ataca, el tiempo fluye más rápido.
+2. Para evitar que el integrador de Euler pierda precisión debido a los enormes pasos de tiempo inducidos por los graves, fragmentamos \texttt{dt} en \texttt{sub\_dt}, permitiendo integrar la curva caótica con pasos pequeños sin importar qué tan fuerte sea el impacto musical.
 \part{Legado: Resumen de la Primera Edición}
 
 
