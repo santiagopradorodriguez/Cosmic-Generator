@@ -1,3 +1,11 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
 \section{Arquitectura del Código y Flujo de Trabajo}
 
 La arquitectura del simulador físico Cosmic-Generator está estructurada para maximizar la modularidad, el rendimiento y la facilidad de uso. El flujo de trabajo o pipeline sigue un modelo secuencial desde la captura de parámetros del usuario hasta la visualización en tiempo real y la síntesis de audio.
@@ -30,3 +38,5 @@ El código fuente se organiza de forma rigurosa y cohesiva en distintos director
     \item \textbf{\texttt{src/audio/}:} Módulo encargado de la síntesis y gestión de sonido. Actúa escuchando los eventos disparados por el Core (por ejemplo, el rebote o impacto de una entidad) y los transforma dinámicamente en efectos de audio espaciales o arreglos musicales.
     \item \textbf{\texttt{src/render/}:} Dedicado de forma exclusiva a la representación visual. Recopila la información geométrica del Core y realiza las llamadas a la biblioteca gráfica pertinente para renderizar el entorno y los elementos simulados en la ventana de la aplicación.
 \end{itemize}
+
+\end{document}

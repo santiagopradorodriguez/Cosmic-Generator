@@ -1,3 +1,11 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
 \section{Discretización y Simulación Numérica de Sistemas Dinámicos}
 \label{sec:simulacion_numerica}
 
@@ -33,3 +41,5 @@ u(t + \Delta t) = u(t) + \Delta t \cdot F(u(t))
 Aunque computacionalmente económico, el método de Euler exige un paso temporal $\Delta t$ severamente restringido por el criterio de estabilidad de Courant-Friedrichs-Lewy (CFL), especialmente ante los términos difusivos ($\Delta t \propto (\Delta x)^2$). 
 
 Por el contrario, para ecuaciones rígidas ("stiff") y sin disipación natural como la Ecuación de Schrödinger (Gross-Pitaevskii) o la KdV, el método de Euler introduce una espuria explosión de energía. En estas dinámicas, el simulador debe emplear esquemas simplécticos o el clásico \textbf{Runge-Kutta de cuarto orden (RK4)}, integrando estados intermedios $k_1, k_2, k_3, k_4$ que cancelan errores hasta el orden $\mathcal{O}(\Delta t^4)$, asegurando la conservación de los invariantes físicos fundamentales que la academia manda.
+
+\end{document}

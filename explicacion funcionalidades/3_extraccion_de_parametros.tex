@@ -1,3 +1,11 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\begin{document}
 \section{Extracción de Parámetros de Audio}
 \label{sec:extraccion_audio}
 
@@ -14,3 +22,5 @@ Este gradiente espectral alimenta de inmediato nuestros campos vectoriales y los
 \subsection{Cromestesia y Color (Pitch/Tonalidad)}
 Nuestra arquitectura de sombreadores de fragmentos (\textit{Fragment Shaders}) no emplea paletas de colores estáticas. El color de la simulación obedece a un mapeo dinámico entre el \textit{pitch} dominante y el espacio cromático.
 Mediante \texttt{librosa}, extraemos la frecuencia fundamental ($f_0$) y el cromagrama del audio para clasificar la tonalidad en tiempo real. Esta tonalidad modula los canales RGB de forma algorítmica, induciendo una cromestesia donde las frecuencias graves tiñen el entorno de fluidos densos y rojizos, mientras que los armónicos agudos cristalizan la escena en destellos cianes y blancos de alta luminancia.
+
+\end{document}
