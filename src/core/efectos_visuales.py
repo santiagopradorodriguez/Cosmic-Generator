@@ -191,11 +191,20 @@ class MotorFX:
         return cv2.merge((b_shift, g, r_shift))
 
     def feedback_temporal(self, current_frame, decay=0.92):
-        # Convertimos el frame actual a float32 para coincidir con self.prev_frame
+        # Convertimos el frame actual a float32 para acumulación HDR real
         curr_32 = current_frame.astype(np.float32)
-        # FIX: Usar np.maximum en lugar de suma pura para evitar que el video se queme a blanco puro
-        self.prev_frame = np.maximum(curr_32, self.prev_frame * decay)
-        return self.prev_frame.astype(np.uint8)
+        blend = cv2.addWeighted(curr_32, 1.0, self.prev_frame, decay, 0)
+        self.prev_frame = blend # Conservar float32
+        
+        # --- LUMA TONE MAPPING HDR ---
+        b, g, r = cv2.split(blend)
+        L = 0.114 * b + 0.587 * g + 0.299 * r
+        L_safe = np.maximum(L, 1e-5)
+        L_mapped = L_safe / (L_safe + 255.0)
+        ratio = (L_mapped * 260.0) / L_safe
+        
+        out_frame = cv2.merge((b * ratio, g * ratio, r * ratio))
+        return np.clip(out_frame, 0, 255).astype(np.uint8)
 
     def feedback_zoom(self, current_frame, decay=0.92, zoom=1.01):
         """
@@ -209,9 +218,19 @@ class MotorFX:
         M = cv2.getRotationMatrix2D(center, 0, zoom)
         prev_zoomed = cv2.warpAffine(self.prev_frame, M, (w, h), borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
         
-        # Mezclar: np.maximum evita el quemado blanco
-        self.prev_frame = np.maximum(curr_32, prev_zoomed * decay)
-        return self.prev_frame.astype(np.uint8)
+        # Acumulación HDR pura
+        blend = cv2.addWeighted(curr_32, 1.0, prev_zoomed, decay, 0)
+        self.prev_frame = blend
+        
+        # --- LUMA TONE MAPPING HDR ---
+        b, g, r = cv2.split(blend)
+        L = 0.114 * b + 0.587 * g + 0.299 * r
+        L_safe = np.maximum(L, 1e-5)
+        L_mapped = L_safe / (L_safe + 255.0)
+        ratio = (L_mapped * 260.0) / L_safe
+        
+        out_frame = cv2.merge((b * ratio, g * ratio, r * ratio))
+        return np.clip(out_frame, 0, 255).astype(np.uint8)
 
     def apply_god_rays(self, img, intensity, threshold=200):
         """
