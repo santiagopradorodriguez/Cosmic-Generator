@@ -284,8 +284,9 @@ def generar_animacion_god_mode(
                 
                 # 4. Bloom, God Rays y Aberración Cromática (Glow de fondo)
                 if use_flash_local:
-                    frame_final = fx.aplicar_bloom(frame_final, intensity=0.5 + (kick * 1.5), threshold=160)
-                    frame_final = fx.apply_god_rays(frame_final, intensity=kick * 2.0, threshold=180)
+                    # FIX: Reducción drástica del brillo para evitar cegar al espectador
+                    frame_final = fx.aplicar_bloom(frame_final, intensity=0.3 + (kick * 0.6), threshold=180)
+                    frame_final = fx.apply_god_rays(frame_final, intensity=kick * 0.8, threshold=200)
                     frame_final = fx.aberracion_cromatica(frame_final, strength=5.0 + kick * 15 + textura * 15)
                     
                 # 5. Lyrics Overlay (Encima de todo para no ser destruido por el Bloom)
