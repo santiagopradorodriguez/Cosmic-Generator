@@ -171,6 +171,7 @@ class LyricsEngine:
             os.environ["PATH"] += os.pathsep + ffmpeg_dir
 
         # Detectar GPU para acelerar Whisper
+        import torch
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"   🚀 Dispositivo de inferencia: {device}")
 

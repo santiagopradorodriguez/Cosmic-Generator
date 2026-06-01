@@ -193,8 +193,9 @@ class MotorFX:
     def feedback_temporal(self, current_frame, decay=0.92):
         # Convertimos el frame actual a float32 para coincidir con self.prev_frame
         curr_32 = current_frame.astype(np.float32)
-        self.prev_frame = cv2.addWeighted(curr_32, 1.0, self.prev_frame, decay, 0)
-        return np.clip(self.prev_frame, 0, 255).astype(np.uint8)
+        # FIX: Usar np.maximum en lugar de suma pura para evitar que el video se queme a blanco puro
+        self.prev_frame = np.maximum(curr_32, self.prev_frame * decay)
+        return self.prev_frame.astype(np.uint8)
 
     def feedback_zoom(self, current_frame, decay=0.92, zoom=1.01):
         """
@@ -208,9 +209,9 @@ class MotorFX:
         M = cv2.getRotationMatrix2D(center, 0, zoom)
         prev_zoomed = cv2.warpAffine(self.prev_frame, M, (w, h), borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
         
-        # Mezclar: Frame Actual + (Frame Anterior con Zoom * Decay)
-        self.prev_frame = cv2.addWeighted(curr_32, 1.0, prev_zoomed, decay, 0)
-        return np.clip(self.prev_frame, 0, 255).astype(np.uint8)
+        # Mezclar: np.maximum evita el quemado blanco
+        self.prev_frame = np.maximum(curr_32, prev_zoomed * decay)
+        return self.prev_frame.astype(np.uint8)
 
     def apply_god_rays(self, img, intensity, threshold=200):
         """
