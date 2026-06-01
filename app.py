@@ -319,62 +319,88 @@ elif menu == "🎛️ Generador":
                     sys.stderr = old_stderr
 
         if use_lyrics:
-            st.warning("Has activado las letras. Primero debemos extraerlas y corregirlas.")
-            whisper_model = st.selectbox(
-                "Potencia de Transcripción (Modelo de Inteligencia Artificial)",
-                ["tiny", "base", "small", "medium", "large"],
-                index=3, # medium por defecto
-                help="Los modelos más grandes (medium/large) son mucho más precisos con la ortografía y el tiempo, pero requieren más potencia y tiempo de cálculo."
+            st.warning("Opciones de Letras (Lyrics)")
+            modo_letra = st.radio(
+                "¿Cómo quieres sincronizar la letra?", 
+                ["📝 Extraer con IA (No tengo la letra)", "🎯 Alineación Forzada (Pegar Letra Original)"]
             )
-            if st.button("📝 Paso 1: Extraer Letra"):
-                # Guardar el archivo subido temporalmente para Whisper
-                os.makedirs("temp", exist_ok=True)
-                with open(temp_audio_path, "wb") as f:
-                    f.write(audio_file.getbuffer())
-                    
-                st.markdown("### 🖥️ Consola de Extracción (IA)")
-                log_box_letra = st.empty()
-                progress_bar_letra = st.progress(0)
-                
-                # Activar redirección de logs también para la extracción
-                redirector_letra = StreamlitLogRedirector(log_box_letra)
-                old_stdout = sys.stdout
-                old_stderr = sys.stderr
-                sys.stdout = redirector_letra
-                sys.stderr = redirector_letra
-                
-                texto_extraido = ""
-                try:
-                    import time
-                    print("Iniciando transcripción con IA... (Esto puede tomar varios minutos)")
-                    progress_bar_letra.progress(10)
-                    
-                    texto_extraido = transcribir_audio_para_edicion(
-                        temp_audio_path, 
-                        model_size=whisper_model,
-                        max_duration=ui_duracion
-                    )
-                    
-                    progress_bar_letra.progress(100)
-                    print("¡Extracción completada con éxito!")
-                finally:
-                    sys.stdout = old_stdout
-                    sys.stderr = old_stderr
-                    st.session_state.lyrics_text = texto_extraido
-                    st.session_state.lyrics_ready = True
             
-            if st.session_state.lyrics_ready:
-                st.info("Corrige cualquier error en la letra antes de renderizar:")
-                texto_editado = st.text_area("Editor de Letras (Revisa y aprueba):", value=st.session_state.lyrics_text, height=250)
+            if modo_letra == "📝 Extraer con IA (No tengo la letra)":
+                st.info("La IA adivinará la letra desde cero. Primero debemos extraerla y luego podrás corregirla.")
+                whisper_model = st.selectbox(
+                    "Potencia de Transcripción (Modelo de Inteligencia Artificial)",
+                    ["tiny", "base", "small", "medium", "large"],
+                    index=3, # medium por defecto
+                    help="Los modelos más grandes (medium/large) son mucho más precisos con la ortografía y el tiempo, pero requieren más potencia y tiempo de cálculo."
+                )
+                if st.button("📝 Paso 1: Extraer Letra"):
+                    # Guardar el archivo subido temporalmente para Whisper
+                    os.makedirs("temp", exist_ok=True)
+                    with open(temp_audio_path, "wb") as f:
+                        f.write(audio_file.getbuffer())
+                        
+                    st.markdown("### 🖥️ Consola de Extracción (IA)")
+                    log_box_letra = st.empty()
+                    progress_bar_letra = st.progress(0)
+                    
+                    # Activar redirección de logs también para la extracción
+                    redirector_letra = StreamlitLogRedirector(log_box_letra)
+                    old_stdout = sys.stdout
+                    old_stderr = sys.stderr
+                    sys.stdout = redirector_letra
+                    sys.stderr = redirector_letra
+                    
+                    texto_extraido = ""
+                    try:
+                        import time
+                        print("Iniciando transcripción con IA... (Esto puede tomar varios minutos)")
+                        progress_bar_letra.progress(10)
+                        
+                        texto_extraido = transcribir_audio_para_edicion(
+                            temp_audio_path, 
+                            model_size=whisper_model,
+                            max_duration=ui_duracion
+                        )
+                        
+                        progress_bar_letra.progress(100)
+                        print("¡Extracción completada con éxito!")
+                    finally:
+                        sys.stdout = old_stdout
+                        sys.stderr = old_stderr
+                        st.session_state.lyrics_text = texto_extraido
+                        st.session_state.lyrics_ready = True
                 
-                if st.button("🚀 Paso 2: Aprobar Letra y Renderizar Video"):
-                    # Guardar el archivo .txt para que el motor físico lo alinee
-                    with open(temp_audio_txt, "w", encoding="utf-8") as f:
-                        f.write(texto_editado)
+                if st.session_state.lyrics_ready:
+                    st.info("Corrige cualquier error en la letra antes de renderizar:")
+                    texto_editado = st.text_area("Editor de Letras (Revisa y aprueba):", value=st.session_state.lyrics_text, height=250)
                     
-                    dur_val = ui_duracion if ui_duracion > 0 else None
-                    procesar_y_renderizar(dur_val, dur_val)
-                    
+                    if st.button("🚀 Paso 2: Aprobar Letra y Renderizar Video"):
+                        # Guardar el archivo .txt para que el motor físico lo alinee
+                        with open(temp_audio_txt, "w", encoding="utf-8") as f:
+                            f.write(texto_editado)
+                        
+                        dur_val = ui_duracion if ui_duracion > 0 else None
+                        procesar_y_renderizar(dur_val, dur_val)
+                        
+            else:
+                st.info("Pega tu letra oficial aquí. La IA usará exactamente estas palabras y solo buscará en qué milisegundo se pronuncian para lograr una sincronización perfecta.")
+                texto_original = st.text_area("Letra Original de la Canción:", height=300, help="Asegúrate de que la letra esté completa e incluya todas las partes cantadas.")
+                if st.button("🚀 Sincronizar Letra y Renderizar Video"):
+                    if texto_original.strip() == "":
+                        st.error("¡Por favor, pega la letra original en la caja de texto antes de continuar!")
+                    else:
+                        # Escribimos el .txt
+                        with open(temp_audio_txt, "w", encoding="utf-8") as f:
+                            f.write(texto_original.strip())
+                        
+                        # También tenemos que asegurar que el audio se extraiga para el engine
+                        os.makedirs("temp", exist_ok=True)
+                        with open(temp_audio_path, "wb") as f:
+                            f.write(audio_file.getbuffer())
+                            
+                        dur_val = ui_duracion if ui_duracion > 0 else None
+                        procesar_y_renderizar(dur_val, dur_val)
+                        
         else:
             if st.button("🚀 Renderizar Video"):
                 # Guardar el archivo subido temporalmente
