@@ -17,7 +17,8 @@ from core.efectos_visuales import CamaraVirtual, MotorFX
 from core.config import WIDTH, HEIGHT, FPS, ACTOS, NOTE_PALETTE
 from audio.audio_analyzer import analizar_audio
 from core.video_utils import unir_video_con_musica
-from core.visual_entities import EspirituProcedural, SuperformaProcedural, LorenzSwarm, GeneradorHojas
+from core.visual_entities import EspirituProcedural, SuperformaProcedural, LorenzSwarm, GeneradorHojas, BoidsSwarm
+from core.rostros_alienigenas import AlienGenerator
 
 from core.nucleo_visual import (
     simulacion_gray_scott,
@@ -52,7 +53,8 @@ def generar_animacion_god_mode(
     stem_folder=None, 
     use_superposition=False,
     global_cmap=None, 
-    progress_callback=None
+    progress_callback=None,
+    hq_mode=False
 ):
     """
     Función principal encargada de renderizar la animación visual reactiva al audio utilizando múltiples motores físicos.
@@ -166,7 +168,8 @@ def generar_animacion_god_mode(
    
     # --- INICIALIZACIÓN DE BUFFERS FÍSICOS ---
     # Resolución reducida para la simulación (se escala después)
-    gs_scale = 3
+    # En modo HQ usamos resolución completa (gs_scale=1), de lo contrario reducimos por rendimiento
+    gs_scale = 1 if hq_mode else 3
     gs_w, gs_h = WIDTH // gs_scale, HEIGHT // gs_scale
     
     # 1. Gray-Scott (Turing)
@@ -227,7 +230,9 @@ def generar_animacion_god_mode(
 
     # --- INICIALIZAR NUEVOS ELEMENTOS (OPENCV PURO) ---
     lorenz_swarm = LorenzSwarm(WIDTH, HEIGHT, num_attractors=12) # Aumentado masivamente para Caos 3D
+    alien_gen = AlienGenerator(gs_w, gs_h)
     gen_hojas = GeneradorHojas(WIDTH, HEIGHT)
+    boids_swarm = BoidsSwarm(WIDTH, HEIGHT, num_boids=250)
     
     # --- INICIALIZAR GEOMETRÍA SAGRADA ---
     superforma = SuperformaProcedural(WIDTH, HEIGHT)
@@ -254,12 +259,14 @@ def generar_animacion_god_mode(
     
     render_queue = Queue(maxsize=30)
     
+    out_w, out_h = (1920, 1080) if hq_mode else (WIDTH, HEIGHT)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(nombre_salida_temp, fourcc, fps, (WIDTH, HEIGHT))
+    out = cv2.VideoWriter(nombre_salida_temp, fourcc, fps, (out_w, out_h))
     
     def consumer_thread():
-        camara = CamaraVirtual(WIDTH, HEIGHT)
-        fx = MotorFX(WIDTH, HEIGHT)
+        camara = CamaraVirtual(out_w, out_h)
+        fx = MotorFX(out_w, out_h)
+        prev_idx_acto_consumer = -1
         
         while True:
             try:
@@ -268,6 +275,26 @@ def generar_animacion_god_mode(
                     break
                     
                 (i, frame_final, kick, harm, cymbals_val, textura, use_flash_local, use_lyrics_local) = item
+                
+                # --- UPSCALING INICIAL PARA POST-PROCESAMIENTO HQ ---
+                # Hacemos el upscale ANTES de la cámara para que el zoom no estire los píxeles de baja resolución
+                if hq_mode:
+                    frame_final = cv2.resize(frame_final, (out_w, out_h), interpolation=cv2.INTER_LANCZOS4)
+                    gaussian_3 = cv2.GaussianBlur(frame_final, (0, 0), 2.0)
+                    frame_final = cv2.addWeighted(frame_final, 1.5, gaussian_3, -0.5, 0)
+                
+                # --- CONTROL DE CÁMARA ESTRUCTURAL ---
+                if 'cut_frames' in audio_data and len(audio_data['cut_frames']) > 0:
+                    idx_acto_consumer = int(np.searchsorted(audio_data['cut_frames'], i, side='right')) - 1
+                else:
+                    # Fallback basado en el progreso lineal
+                    idx_acto_consumer = int((i / total_frames) * len(local_actos)) if 'local_actos' in locals() else 0
+                    
+                if i == 0 or idx_acto_consumer != prev_idx_acto_consumer:
+                    prev_idx_acto_consumer = idx_acto_consumer
+                    is_chorus = (textura > 0.7 or kick > 0.8)
+                    camara.randomize_mode(is_chorus=is_chorus)
+                
                 
                 # --- POST-PROCESAMIENTO ---
                 # 1. Plasma Melt Feedback (Derretimiento Orgánico)
@@ -278,28 +305,35 @@ def generar_animacion_god_mode(
                     frame_final = fx.aplicar_vhs_noise(frame_final, intensity=textura)
                     
                 # 3. Cámara Virtual (Movimiento)
-                camara.update(energy=harm, kick=kick, snare=kick)
+                camara.update(energy=harm, kick=kick, snare=cymbals_val, bass=textura)
                 if cymbals_val > 0.6 or kick > 0.75:
                     camara.angle += 0.2 * (1 if i % 20 < 10 else -1)
                 frame_final = camara.aplicar(frame_final)
                 
                 # 4. Bloom, God Rays y Aberración Cromática (Glow de fondo)
                 if use_flash_local:
-                    # FIX: Reducción extrema a la mitad de la versión anterior para un destello muy sutil
-                    frame_final = fx.aplicar_bloom(frame_final, intensity=0.15 + (kick * 0.3), threshold=180)
-                    frame_final = fx.apply_god_rays(frame_final, intensity=kick * 0.4, threshold=200)
-                    frame_final = fx.aberracion_cromatica(frame_final, strength=5.0 + kick * 15 + textura * 15)
+                    # Strobe Lightning en platillos extremos
+                    if cymbals_val > 0.85 and i % 2 == 0:
+                        frame_final = 255 - frame_final # Inversión negativa (Flash VJ)
+                    elif kick > 0.9 and i % 3 == 0:
+                        frame_final = np.ones_like(frame_final) * 255 # Flash blanco puro
+                    else:
+                        frame_final = fx.aplicar_bloom(frame_final, intensity=0.15 + (kick * 0.3), threshold=180)
+                        frame_final = fx.apply_god_rays(frame_final, intensity=kick * 0.4, threshold=200)
+                        frame_final = fx.aberracion_cromatica(frame_final, strength=5.0 + kick * 15 + textura * 15)
                     
-                # 5. Lyrics Overlay (Encima de todo para no ser destruido por el Bloom)
+                # 5. Tipografía Cinética Reactiva (Encima de todo)
                 if lyrics_engine and use_lyrics_local:
                     tiempo_actual = i / float(fps)
-                    frame_final = lyrics_engine.draw(frame_final, tiempo_actual, kick=kick)
-                    
+                    # La letra crece y tiembla con la energía armónica (voces) y bombo
+                    elastic_scale = 1.0 + (harm * 0.3) + (kick * 0.1)
+                    frame_final = lyrics_engine.draw(frame_final, tiempo_actual, kick=kick, scale_mod=elastic_scale)
+
                 # 6. Marca de agua
                 es_freemium = True
                 if es_freemium:
                     wm_text = "Generated by Cosmic Generator V2"
-                    cv2.putText(frame_final, wm_text, (WIDTH - 500, HEIGHT - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (150, 150, 150), 2, cv2.LINE_AA)
+                    cv2.putText(frame_final, wm_text, (out_w - 500, out_h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.7 if not hq_mode else 1.0, (150, 150, 150), 2, cv2.LINE_AA)
                     
                 out.write(frame_final)
                 render_queue.task_done()
@@ -402,7 +436,6 @@ def generar_animacion_god_mode(
                 scene_flags['leaves'] = np.random.rand() < 0.3
                 chance_superforma = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'ifs' in allowed_engines) else 0.4
                 scene_flags['superforma'] = (np.random.rand() < chance_superforma) and use_geometry
-            
             
             bg_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
             img_norm = np.zeros((gs_h, gs_w), dtype=np.float32)
@@ -617,6 +650,17 @@ def generar_animacion_god_mode(
                 # FIX: Añadido argumento faltante (seed_mask=None)
                 update_particles(p_pos, p_vel, force_field, gs_w, gs_h, damp, speed, None)
                 
+            elif escena['engine'] == 'ALIEN':
+                # Rostros Alienígenas / Psicodélicos
+                img_alien = alien_gen.procesar(harm, kick, cymbals_val)
+                # AlienGenerator retorna BGR [0-255]. img_norm espera float [0-1] o escala de grises.
+                # Convertiremos a float [0-1] y luego aplicaremos color custom o simplemente dejamos que el pipeline fluya.
+                img_alien_gray = cv2.cvtColor(img_alien, cv2.COLOR_BGR2GRAY)
+                img_norm = img_alien_gray.astype(np.float32) / 255.0
+                
+                # Superponemos la imagen a color real en la capa de BG para que mantenga sus colores nativos
+                bg_layer[:] = cv2.resize(img_alien, (WIDTH, HEIGHT))
+                
             elif escena['engine'] == 'CPPN':
                 # Neural Engine
                 t_neural = i / fps
@@ -773,6 +817,10 @@ def generar_animacion_god_mode(
                     if idx < num_active_spirits:
                         t_esp = i * 0.05 + (idx * 13.0) 
                         esp.update(overlay_layer, pos_espiritus[idx], -0.5, 0.8, t_esp, kick, harm, color_mpl)
+                        
+            # 5. Enjambre Boids (Partículas Audio-reactivas)
+            if escena['engine'] != 'lorenz':
+                boids_swarm.update(overlay_layer, kick, cymbals_val, color_bgr_override=target_color_bgr)
             
             # Aplicar suave resplandor (Neon Glow) al overlay
             overlay_layer = cv2.GaussianBlur(overlay_layer, (3, 3), 0)
@@ -790,6 +838,15 @@ def generar_animacion_god_mode(
             # 1.2 Mandelbrot Noise Overlay
             t = i / fps
             frame_final = fx_producer.mandelbrot_overlay(frame_final, t, intensity=0.3 * harm)
+            
+            # 1.3 Datamoshing Biológico (Pixel Sorting por luminancia)
+            frame_final = fx_producer.datamosh_biologico(frame_final, energy=harm, kick=kick)
+            
+            # 1.4 Efectos VJ Extremos
+            frame_final = fx_producer.aberracion_cromatica_ritmica(frame_final, kick, cymbals_val)
+            frame_final = fx_producer.vision_infrarroja_neon(frame_final, trigger=(harm > 0.85 and kick > 0.8))
+            frame_final = fx_producer.agujero_negro_remap(frame_final, phase=harm, trigger=(kick > 0.9))
+            frame_final = fx_producer.time_slice_glitch(frame_final, trigger=(cymbals_val > 0.8))
             
             # --- ENVIAR A COLA DE RENDER ---
             # El productor hace la física, el consumidor hace OpenCV. Timeout para evitar deadlock.

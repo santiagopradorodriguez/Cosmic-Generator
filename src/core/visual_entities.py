@@ -542,3 +542,41 @@ class AdveccionTextura:
 
     def render(self, source_image):
         return cv2.remap(source_image, self.map_x, self.map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+class BoidsSwarm:
+    def __init__(self, w, h, num_boids=200):
+        self.w = w
+        self.h = h
+        self.num_boids = num_boids
+        self.pos = np.random.rand(num_boids, 2) * [w, h]
+        self.vel = (np.random.rand(num_boids, 2) - 0.5) * 10.0
+        
+    def update(self, frame, kick, cymbals, color_bgr_override=None):
+        center = np.array([self.w/2, self.h/2])
+        dir_to_center = center - self.pos
+        dist_to_center = np.linalg.norm(dir_to_center, axis=1, keepdims=True) + 1e-6
+        dir_to_center = dir_to_center / dist_to_center
+        
+        # Orbita base
+        tangent = np.column_stack([-dir_to_center[:, 1], dir_to_center[:, 0]])
+        force = tangent * 5.0 + dir_to_center * (dist_to_center - self.h * 0.3) * 0.05
+        
+        # Dispersión caótica (Susto de los Boids por el platillo/redoble)
+        if cymbals > 0.6:
+            chaos = (np.random.rand(self.num_boids, 2) - 0.5) * cymbals * 300.0
+            force += chaos
+            
+        self.vel += force * 0.1
+        self.vel *= 0.92 # Fricción
+        self.pos += self.vel * (1.0 + kick * 2.0)
+        
+        # Toroidal wrap (aparecen por el otro lado)
+        self.pos[:, 0] %= self.w
+        self.pos[:, 1] %= self.h
+        
+        color = color_bgr_override if color_bgr_override else (180, 200, 255)
+        if cymbals > 0.75:
+            color = (255, 255, 255) # Blancura incandescente al asustarse
+            
+        for p in self.pos:
+            cv2.circle(frame, (int(p[0]), int(p[1])), int(1 + kick * 5), color, -1)

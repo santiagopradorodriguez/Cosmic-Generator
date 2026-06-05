@@ -443,7 +443,7 @@ class LyricsEngine:
         
         return mask
 
-    def draw(self, frame, time, kick=0.0, snare=0.0, energy=0.0):
+    def draw(self, frame, time, kick=0.0, snare=0.0, energy=0.0, scale_mod=1.0):
         """
         Dibuja la palabra actual en el frame usando OpenCV/Pillow con estética Cyberpunk Neón y Cromestesia.
         Incluye posicionamiento y animaciones suaves (Fade-in).
@@ -478,7 +478,7 @@ class LyricsEngine:
         # Tamaño dinámico reactivo al kick (latido del texto)
         base_size = int(h * 0.08)
         kick_bump = int((h * 0.04) * self.smoothed_kick)
-        font_size = base_size + kick_bump
+        font_size = int((base_size + kick_bump) * scale_mod)
         
         try:
             font = ImageFont.truetype("impact.ttf", font_size)

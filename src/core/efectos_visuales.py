@@ -20,36 +20,104 @@ class CamaraVirtual:
         self.drift_y = 0
         self.t = 0.0
         self.base_zoom = 1.0
+        
+        # Máquina de estados cinemática
+        self.mode = 0
+        self.mode_timer = 0.0
+        self.target_angle = 0.0
+        
+        # Matriz para lente psicodélico
+        f = min(width, height)
+        cx, cy = width / 2, height / 2
+        self.K = np.array([[f, 0, cx], [0, f, cy], [0, 0, 1]], dtype=np.float32)
 
-    def update(self, energy, kick, snare):
+    def randomize_mode(self, is_chorus=False):
+        import random
+        if is_chorus:
+            # En el estribillo forzamos modos frenéticos o de zoom (Modo 1 o 3)
+            self.mode = random.choice([1, 3])
+        else:
+            # Versos: Cualquier plano aleatorio
+            self.mode = random.choice([0, 1, 2, 3])
+            
+        # Pequeño salto aleatorio de ángulo al cambiar de plano
+        self.angle += random.uniform(-10.0, 10.0)
+
+    def update(self, energy, kick, snare, bass=0.0):
         self.t += 0.033 # asume ~30fps
         
-        # Trayectorias orgánicas suaves (Lissajous)
-        self.drift_x = np.sin(self.t * 0.5) * 30.0 + np.sin(self.t * 0.1) * 20.0
-        self.drift_y = np.cos(self.t * 0.4) * 30.0 + np.sin(self.t * 0.2) * 20.0
+        # Pumping del Sub-Bajo (Añade una elasticidad al zoom base)
+        pumping_elasticity = bass * 0.45
+            
+        # MODO 0: Clásico (Paneo y respiración suave)
+        if self.mode == 0:
+            self.drift_x = np.sin(self.t * 0.5) * 30.0 + np.sin(self.t * 0.1) * 20.0
+            self.drift_y = np.cos(self.t * 0.4) * 30.0 + np.sin(self.t * 0.2) * 20.0
+            self.base_zoom = 1.05 + np.sin(self.t * 0.2) * 0.05
+            target_zoom = self.base_zoom + (energy * 0.1) + (kick * 0.2) + pumping_elasticity
+            self.zoom += (target_zoom - self.zoom) * 0.15
+            self.target_angle = np.sin(self.t * 0.15) * 5.0 + (snare * 2.0)
+            self.angle += (self.target_angle - self.angle) * 0.1
+
+        # MODO 1: Vértigo Rítmico (Objetivo Cinético)
+        elif self.mode == 1:
+            self.drift_x = np.sin(self.t) * 10.0
+            self.drift_y = np.cos(self.t) * 10.0
+            target_zoom = 1.25 + (kick * 0.4) + pumping_elasticity
+            self.zoom += (target_zoom - self.zoom) * 0.1
+            
+            # Snap & Smooth en los ángulos
+            umbral_kick = 0.7
+            umbral_snare = 0.7
+            
+            if kick > umbral_kick:
+                self.target_angle += 45.0  # Salto de 45 grados a la derecha
+            elif snare > umbral_snare:
+                self.target_angle -= 90.0  # Salto de 90 grados a la izquierda
+                
+            friccion = 0.15 + (energy * 0.15)
+            self.angle += (self.target_angle - self.angle) * friccion
+
+        # MODO 2: Alejamiento (Caleidoscopio de espejos)
+        elif self.mode == 2:
+            self.drift_x = np.sin(self.t * 0.2) * 80.0
+            self.drift_y = np.cos(self.t * 0.3) * 80.0
+            target_zoom = 0.5 - (kick * 0.15) # Zoom Out extremo
+            self.zoom += (target_zoom - self.zoom) * 0.05
+            self.target_angle = np.sin(self.t * 0.1) * 20.0
+            self.angle += (self.target_angle - self.angle) * 0.05
+            
+        # MODO 3: Curvatura Extrema Psicodélica (Derretimiento)
+        elif self.mode == 3:
+            self.drift_x = np.sin(self.t * 2.0) * 15.0 * kick
+            self.drift_y = np.cos(self.t * 2.0) * 15.0 * kick
+            target_zoom = 1.1 + (kick * 0.6)
+            self.zoom += (target_zoom - self.zoom) * 0.2
+            self.angle *= 0.9 # Retornar suavemente al centro
         
-        # Respiración del zoom y reactividad musical
-        self.base_zoom = 1.0 + np.sin(self.t * 0.2) * 0.05
-        target_zoom = self.base_zoom + (energy * 0.15) + (kick * 0.25)
-        self.zoom += (target_zoom - self.zoom) * 0.15
-        
-        # Rotación armónica
-        target_angle = np.sin(self.t * 0.15) * 5.0 + (snare * 2.0)
-        self.angle += (target_angle - self.angle) * 0.1
-        
-        # Shake violento
+        # Shake violento universal
         if kick > 0.6:
-            self.shake_x = random.uniform(-30, 30) * kick
-            self.shake_y = random.uniform(-30, 30) * kick
+            self.shake_x = random.uniform(-40, 40) * kick
+            self.shake_y = random.uniform(-40, 40) * kick
         else:
             self.shake_x *= 0.7
             self.shake_y *= 0.7
 
     def aplicar(self, frame):
+        # 1. Distorsión Ojo de pez (Solo en Modo 3)
+        if self.mode == 3:
+            k1 = -0.3 - (self.zoom * 0.3) # Deformación ligada a la intensidad
+            D = np.array([k1, 0.0, 0.0, 0.0], dtype=np.float32)
+            map1, map2 = cv2.initUndistortRectifyMap(self.K, D, None, self.K, (self.w, self.h), cv2.CV_32FC1)
+            frame = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT_101)
+            
+        # 2. Transformación Afín 2D (Rotación, Escala, Traslación)
         M = cv2.getRotationMatrix2D(self.center, self.angle, self.zoom)
         M[0, 2] += self.shake_x + self.drift_x
         M[1, 2] += self.shake_y + self.drift_y
-        return cv2.warpAffine(frame, M, (self.w, self.h), borderMode=cv2.BORDER_REFLECT_101)
+        
+        # INTER_CUBIC previene la borrosidad extrema al hacer zoom in digital
+        return cv2.warpAffine(frame, M, (self.w, self.h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT_101)
 
 class MotorFX:
     def __init__(self, w, h):
@@ -57,6 +125,8 @@ class MotorFX:
         self.h = h
         # Buffer inicializado explícitamente como float32
         self.prev_frame = np.zeros((h, w, 3), dtype=np.float32)
+        # Buffer circular para Time-Slice Glitch
+        self.frame_buffer = []
         
     def aplicar_bloom(self, img, intensity, threshold=200):
         """
@@ -246,6 +316,40 @@ class MotorFX:
         out_frame = cv2.merge((b * ratio, g * ratio, r * ratio))
         return np.clip(out_frame, 0, 255).astype(np.uint8)
 
+    def datamosh_biologico(self, current_frame, energy, kick):
+        """
+        Simula Pixel Sorting / Datamoshing usando el gradiente de luminancia
+        como mapa de desplazamiento para 'derretir' los píxeles hacia abajo.
+        """
+        if energy < 0.1 and kick < 0.2:
+            return current_frame
+            
+        h, w = current_frame.shape[:2]
+        gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
+        
+        # Calcular el gradiente Y de la luminancia (bordes horizontales)
+        grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+        
+        # Crear mapas de coordenadas
+        map_x, map_y = np.meshgrid(np.arange(w), np.arange(h))
+        map_x = map_x.astype(np.float32)
+        map_y = map_y.astype(np.float32)
+        
+        # El desplazamiento ocurre donde el gradiente es fuerte (los bordes 'gotean')
+        desplazamiento = np.abs(grad_y) * (0.005 + kick * 0.08)
+        
+        # Aplicamos un umbral para que solo las áreas más brillantes goteen
+        _, mask = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY)
+        mask_f = (mask.astype(np.float32) / 255.0)
+        
+        # map_y = y - algo: toma pixeles de más arriba y los pone aquí (gravedad)
+        map_y = map_y - (desplazamiento * mask_f)
+        
+        # Interpolación Nearest Neighbor da el look crudo y pixelado del Datamoshing
+        moshed = cv2.remap(current_frame, map_x, map_y, interpolation=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REPLICATE)
+        
+        return moshed
+
     def apply_god_rays(self, img, intensity, threshold=200):
         """
         Genera rayos volumétricos (Radial Blur Aditivo) desde el centro.
@@ -384,3 +488,85 @@ class MotorFX:
             return k_img
         else:
             return cv2.addWeighted(img, 1.0 - intensity, k_img, intensity, 0)
+
+    def agujero_negro_remap(self, img, phase, trigger=False):
+        """Efecto Gravitacional: Absorbe la imagen y la escupe como onda expansiva en el kick."""
+        h, w = self.h, self.w
+        map_x, map_y = np.meshgrid(np.arange(w), np.arange(h))
+        cx, cy = w / 2, h / 2
+        
+        dx = map_x - cx
+        dy = map_y - cy
+        r = np.sqrt(dx**2 + dy**2) + 1e-5
+        
+        if trigger:
+            # Expulsión (Supernova)
+            fuerza = -50.0 * np.exp(-r / 150.0)
+        else:
+            # Absorción lenta (Agujero Negro)
+            fuerza = 20.0 * phase * np.exp(-r / 300.0)
+            
+        map_x_dist = map_x + (dx / r) * fuerza
+        map_y_dist = map_y + (dy / r) * fuerza
+        
+        return cv2.remap(img, map_x_dist.astype(np.float32), map_y_dist.astype(np.float32), 
+                         interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+    def time_slice_glitch(self, img, trigger):
+        """Rebana la pantalla horizontalmente mostrando fotogramas del pasado."""
+        self.frame_buffer.append(img.copy())
+        if len(self.frame_buffer) > 15:
+            self.frame_buffer.pop(0)
+            
+        if not trigger or len(self.frame_buffer) < 5:
+            return img
+            
+        h, w = self.h, self.w
+        sliced_img = np.zeros_like(img)
+        franjas = 10
+        alto_franja = h // franjas
+        
+        for i in range(franjas):
+            y_start = i * alto_franja
+            y_end = (i + 1) * alto_franja if i < franjas - 1 else h
+            
+            # Elegir un fotograma aleatorio del pasado
+            frame_idx = np.random.randint(0, len(self.frame_buffer))
+            sliced_img[y_start:y_end, :] = self.frame_buffer[frame_idx][y_start:y_end, :]
+            
+        return sliced_img
+
+    def vision_infrarroja_neon(self, img, trigger):
+        """Convierte la imagen a alambres brillantes Canny en los picos de intensidad."""
+        if not trigger: return img
+        
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(img_gray, 50, 150)
+        
+        neon = np.zeros_like(img)
+        # Borde color rojo/naranja infrarrojo
+        neon[edges == 255] = [50, 50, 255]
+        
+        # Aplicar el propio motor de bloom a estos bordes
+        return self.aplicar_bloom(neon, intensity=2.0, threshold=10)
+
+    def aberracion_cromatica_ritmica(self, img, kick_val, snare_val):
+        """Separa el canal Rojo y Azul en función del kick y el snare."""
+        if kick_val < 0.1 and snare_val < 0.1: return img
+        
+        b, g, r = cv2.split(img)
+        rows, cols = self.h, self.w
+        
+        # El kick desplaza el rojo a la derecha
+        shift_r = int(kick_val * 40.0)
+        if shift_r > 0:
+            M_r = np.float32([[1, 0, shift_r], [0, 1, 0]])
+            r = cv2.warpAffine(r, M_r, (cols, rows))
+            
+        # El snare desplaza el azul a la izquierda
+        shift_b = int(snare_val * 40.0)
+        if shift_b > 0:
+            M_b = np.float32([[1, 0, -shift_b], [0, 1, 0]])
+            b = cv2.warpAffine(b, M_b, (cols, rows))
+            
+        return cv2.merge((b, g, r))

@@ -42,6 +42,6 @@ def unir_video_con_musica(video_path, audio_path, output_path, duracion=None):
         else:
             final = video.set_audio(audio)
         
-        final.write_videofile(output_path, codec='libx264', audio_codec='aac', fps=video.fps)
+        final.write_videofile(output_path, codec='libx264', audio_codec='aac', fps=video.fps, bitrate="25000k", preset="slow")
     except Exception as e:
         print(f"Error uniendo audio: {e}")

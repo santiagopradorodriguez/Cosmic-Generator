@@ -47,10 +47,68 @@ def analizar_audio(ruta_audio, fps, duracion=None):
     cymbals = (cymbals_raw - np.min(cymbals_raw)) / (np.max(cymbals_raw) - np.min(cymbals_raw) + 1e-6)
     cymbals = np.resize(cymbals, total_frames)
     
-    # Detectar BPM y Beats (Frases estructurales cada 16 beats)
-    tempo, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=sr, hop_length=hop_length)
-    phrase_length = 16
-    cut_frames = beat_frames[::phrase_length] if len(beat_frames) > 0 else np.array([])
+    # Detectar BPM y Beats
+    tempo_array, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=sr, hop_length=hop_length)
+    tempo = float(tempo_array[0]) if isinstance(tempo_array, np.ndarray) else float(tempo_array)
+    
+    # 1. Calcular Energía Global RMS para detectar estribillos/drops
+    rms_global = librosa.feature.rms(y=y, hop_length=hop_length)[0]
+    rms_global = rms_global / (np.max(rms_global) + 1e-6)
+    umbral_estribillo = np.percentile(rms_global, 80) # El 20% más intenso se considera estribillo
+    
+    # 2. Curva de Novedad Estructural (Onset Strength Global)
+    onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
+    
+    # Detección de picos macro-estructurales (drops, cambios de fase)
+    peaks = librosa.util.peak_pick(onset_env, pre_max=20, post_max=20, pre_avg=20, post_avg=20, delta=1.5, wait=30)
+    
+    # 3. Alineación Cuántica (Alinear los cortes al beat más cercano)
+    quantized_cuts = []
+    if len(beat_frames) > 0:
+        for peak in peaks:
+            idx = np.searchsorted(beat_frames, peak)
+            if idx == 0:
+                quantized_cuts.append(beat_frames[0])
+            elif idx == len(beat_frames):
+                quantized_cuts.append(beat_frames[-1])
+            else:
+                left = beat_frames[idx-1]
+                right = beat_frames[idx]
+                closest = left if (peak - left) < (right - peak) else right
+                quantized_cuts.append(closest)
+                
+    # 4. Subdivisiones de cámara musicales (Dinámica de videoclip)
+    base_cuts = []
+    if len(beat_frames) > 0:
+        base_cuts.append(beat_frames[0])
+        current_beat_idx = 0
+        while current_beat_idx < len(beat_frames):
+            frame_idx = beat_frames[current_beat_idx]
+            # Extraer energía promedio del compás para decidir cuán rápido cortar
+            energia_actual = rms_global[frame_idx] if frame_idx < len(rms_global) else 0
+            
+            if energia_actual > umbral_estribillo:
+                # Estribillo/Drop: cortes rápidos de 1 o 2 compases (4 u 8 beats)
+                salto = 4 if tempo < 120 else 8 
+            else:
+                # Verso Normal: 4 compases de 4 cuartos (16 beats)
+                salto = 16
+                
+            next_beat_idx = current_beat_idx + salto
+            if next_beat_idx < len(beat_frames):
+                base_cuts.append(beat_frames[next_beat_idx])
+            current_beat_idx = next_beat_idx
+    
+    # Unir todo, limpiar duplicados cercanos
+    all_cuts = sorted(list(set(base_cuts + quantized_cuts)))
+    final_cuts = []
+    min_frames_between_cuts = 15 # Aproximadamente 0.3 segundos mínimo
+    for cut in all_cuts:
+        if len(final_cuts) == 0 or (cut - final_cuts[-1]) > min_frames_between_cuts:
+            final_cuts.append(cut)
+            
+    cut_frames = np.array(final_cuts)
+    
     if len(cut_frames) == 0 or cut_frames[0] != 0:
         cut_frames = np.insert(cut_frames, 0, 0)
     if cut_frames[-1] < total_frames:
@@ -137,10 +195,67 @@ def analizar_stems(stem_folder, fps, duracion=None):
     global_chroma = np.sum(chroma_mix, axis=1)
     global_note = int(np.argmax(global_chroma))
     
-    # Detectar BPM y Beats (Frases estructurales cada 16 beats)
-    tempo, beat_frames = librosa.beat.beat_track(y=y_drums, sr=sr, hop_length=hop_length)
-    phrase_length = 16
-    cut_frames = beat_frames[::phrase_length] if len(beat_frames) > 0 else np.array([])
+    # Detectar BPM y Beats
+    tempo_array, beat_frames = librosa.beat.beat_track(y=y_drums, sr=sr, hop_length=hop_length)
+    tempo = float(tempo_array[0]) if isinstance(tempo_array, np.ndarray) else float(tempo_array)
+    
+    # 1. Calcular Energía Global RMS para detectar estribillos/drops
+    rms_global = librosa.feature.rms(y=y_mix, hop_length=hop_length)[0]
+    rms_global = rms_global / (np.max(rms_global) + 1e-6)
+    umbral_estribillo = np.percentile(rms_global, 80) # El 20% más intenso se considera estribillo
+    
+    # 2. Curva de Novedad Estructural (Onset Strength Global)
+    onset_env = librosa.onset.onset_strength(y=y_mix, sr=sr, hop_length=hop_length)
+    
+    # Detección de picos macro-estructurales (drops, cambios de fase)
+    peaks = librosa.util.peak_pick(onset_env, pre_max=20, post_max=20, pre_avg=20, post_avg=20, delta=1.5, wait=30)
+    
+    # 3. Alineación Cuántica (Alinear los cortes al beat más cercano)
+    quantized_cuts = []
+    if len(beat_frames) > 0:
+        for peak in peaks:
+            idx = np.searchsorted(beat_frames, peak)
+            if idx == 0:
+                quantized_cuts.append(beat_frames[0])
+            elif idx == len(beat_frames):
+                quantized_cuts.append(beat_frames[-1])
+            else:
+                left = beat_frames[idx-1]
+                right = beat_frames[idx]
+                closest = left if (peak - left) < (right - peak) else right
+                quantized_cuts.append(closest)
+                
+    # 4. Subdivisiones de cámara musicales (Dinámica de videoclip)
+    base_cuts = []
+    if len(beat_frames) > 0:
+        base_cuts.append(beat_frames[0])
+        current_beat_idx = 0
+        while current_beat_idx < len(beat_frames):
+            frame_idx = beat_frames[current_beat_idx]
+            energia_actual = rms_global[frame_idx] if frame_idx < len(rms_global) else 0
+            
+            if energia_actual > umbral_estribillo:
+                # Estribillo/Drop: cortes rápidos de 1 o 2 compases (4 u 8 beats)
+                salto = 4 if tempo < 120 else 8 
+            else:
+                # Verso Normal: 4 compases de 4 cuartos (16 beats)
+                salto = 16
+                
+            next_beat_idx = current_beat_idx + salto
+            if next_beat_idx < len(beat_frames):
+                base_cuts.append(beat_frames[next_beat_idx])
+            current_beat_idx = next_beat_idx
+    
+    # Unir todo, limpiar duplicados cercanos
+    all_cuts = sorted(list(set(base_cuts + quantized_cuts)))
+    final_cuts = []
+    min_frames_between_cuts = 15 # Aproximadamente 0.3 segundos mínimo
+    for cut in all_cuts:
+        if len(final_cuts) == 0 or (cut - final_cuts[-1]) > min_frames_between_cuts:
+            final_cuts.append(cut)
+            
+    cut_frames = np.array(final_cuts)
+    
     if len(cut_frames) == 0 or cut_frames[0] != 0:
         cut_frames = np.insert(cut_frames, 0, 0)
     if cut_frames[-1] < total_frames:

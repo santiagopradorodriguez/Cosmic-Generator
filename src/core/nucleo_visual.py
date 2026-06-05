@@ -74,6 +74,8 @@ def simulacion_ondas(u, u_prev, out_u, damping, c2_dt2, seed_mask=None):
             
             out_u[r, c] = val
 
+
+
 # ==========================================
 # 3. KURAMOTO-SIVASHINSKY (ESTABILIZADO)
 # ==========================================

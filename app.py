@@ -151,10 +151,12 @@ if menu == "🏠 Inicio":
 elif menu == "🎛️ Generador":
     st.title("Generador de Videos (Motores Estables)")
     
-    # Subida de archivo
-    audio_file = st.file_uploader("Sube tu canción (.wav, .mp3, .flac)", type=["wav", "mp3", "flac"])
+    # Subida de archivo (Soporta múltiples para batch processing nocturno)
+    audio_files = st.file_uploader("Sube tus canciones (.wav, .mp3, .flac) [SE PUEDEN SUBIR VARIOS PARA BATCH]", type=["wav", "mp3", "flac"], accept_multiple_files=True)
     
-    if audio_file is not None:
+    if audio_files:
+        # Previsualizamos solo el primer archivo en la UI
+        audio_file = audio_files[0]
         st.audio(audio_file, format='audio/wav')
         
         col1, col2 = st.columns(2)
@@ -172,7 +174,8 @@ elif menu == "🎛️ Generador":
                     "KdV (Tsunamis)",
                     "Caos 3D (Atractores de Lorenz)",
                     "Geometría Sagrada (Fractales IFS)",
-                    "Red Neuronal Rápida (CPPN)"
+                    "Red Neuronal Rápida (CPPN)",
+                    "Entidades Alienígenas (Pareidolia)"
                 ]
             )
             use_random_seed = st.checkbox("Semilla Aleatoria", value=True)
@@ -186,6 +189,7 @@ elif menu == "🎛️ Generador":
             use_spirits = st.checkbox("Usar Espíritus", value=True)
             use_kaleido = st.checkbox("Efecto Caleidoscopio", value=True)
             use_flash = st.checkbox("Flash/Bloom", value=True)
+            hq_mode = st.checkbox("🌟 Modo HQ (Alta Resolución Física - Más lento)", value=False)
             use_chroma = st.checkbox("Activar Cromestesia Global (Color por Vibra de la Canción)", value=False)
             use_stems = st.checkbox("Modo Sinestesia (Usar Stems si existen)", value=False, help="Si ya usaste el Separador de Pistas, la física reaccionará de forma independiente a cada instrumento.")
             
@@ -215,6 +219,7 @@ elif menu == "🎛️ Generador":
                     e7 = st.checkbox("Caos 3D (Atractores de Lorenz)", value=False)
                     e8 = st.checkbox("Geometría Sagrada (Fractales IFS)", value=False)
                     e9 = st.checkbox("Red Neuronal Rápida (CPPN)", value=True)
+                    e10 = st.checkbox("Entidades Alienígenas (Pareidolia)", value=True)
                 
                 if e1: custom_engines_list.append('GS')
                 if e2: custom_engines_list.append('KS')
@@ -226,7 +231,8 @@ elif menu == "🎛️ Generador":
                 if e7: custom_engines_list.append('lorenz')
                 if e8: custom_engines_list.append('ifs')
                 if e9: custom_engines_list.append('CPPN')
-            
+                if e10: custom_engines_list.append('ALIEN')
+                
         # Determinar allowed_engines final basado en el selectbox principal
         if modo_render == "Mix (Todos los Motores)":
             allowed_engines_list = custom_engines_list # Usa lo que haya en avanzado
@@ -250,24 +256,24 @@ elif menu == "🎛️ Generador":
             allowed_engines_list = ['ifs']
         elif modo_render == "Red Neuronal Rápida (CPPN)":
             allowed_engines_list = ['CPPN']
+        elif modo_render == "Entidades Alienígenas (Pareidolia)":
+            allowed_engines_list = ['ALIEN']
         else:
             allowed_engines_list = custom_engines_list
             
         # --- NUEVO FLUJO DE RENDERIZADO CON EDITOR DE LETRAS ---
-        temp_audio_path = os.path.join("temp", audio_file.name)
-        temp_audio_txt = os.path.join("temp", os.path.splitext(audio_file.name)[0] + ".txt")
         
         if "lyrics_text" not in st.session_state:
             st.session_state.lyrics_text = ""
         if "lyrics_ready" not in st.session_state:
             st.session_state.lyrics_ready = False
             
-        def procesar_y_renderizar(dur_val, mix_dur_val):
-            st.success("Renderizando... Por favor mira la consola para ver el progreso detallado.")
+        def procesar_y_renderizar(dur_val, mix_dur_val, target_audio_file, target_audio_path):
+            st.success(f"Renderizando {target_audio_file.name}... Por favor mira la consola.")
             progress_bar = st.progress(0)
             
-            temp_video = os.path.join("temp", "temp_render.mp4")
-            final_video = os.path.join("RENDERS", f"FINAL_{audio_file.name}.mp4")
+            temp_video = os.path.join("temp", f"temp_{target_audio_file.name}.mp4")
+            final_video = os.path.join("RENDERS", f"FINAL_{target_audio_file.name}.mp4")
             os.makedirs("RENDERS", exist_ok=True)
             
             st.markdown("### 🖥️ Consola de Desarrollo (Logs)")
@@ -286,7 +292,7 @@ elif menu == "🎛️ Generador":
                         progress_bar.progress(int((current / total) * 100))
                         
                     success = generar_animacion_god_mode(
-                        ruta_audio=temp_audio_path,
+                        ruta_audio=target_audio_path,
                         nombre_salida_temp=temp_video,
                         fps=30,
                         duracion=dur_val,
@@ -299,15 +305,16 @@ elif menu == "🎛️ Generador":
                         use_lyrics=use_lyrics,
                         lyrics_pos=lyrics_pos,
                         use_stems=use_stems,
-                        stem_folder=os.path.join(os.getcwd(), "STEMS", "htdemucs", os.path.splitext(audio_file.name)[0]),
+                        stem_folder=os.path.join(os.getcwd(), "STEMS", "htdemucs", os.path.splitext(target_audio_file.name)[0]),
                         use_superposition=use_superposition,
-                        progress_callback=update_progress
+                        progress_callback=update_progress,
+                        hq_mode=hq_mode
                     )
                     progress_bar.progress(100)
                     
                     if success:
                         st.info("Mezclando audio con el video...")
-                        unir_video_con_musica(temp_video, temp_audio_path, final_video, duracion=mix_dur_val)
+                        unir_video_con_musica(temp_video, target_audio_path, final_video, duracion=mix_dur_val)
                         progress_bar.progress(100)
                         st.success(f"✅ ¡Video generado con éxito! Guardado en: {final_video}")
                         st.video(final_video)
@@ -384,12 +391,14 @@ elif menu == "🎛️ Generador":
                     texto_editado = st.text_area("Editor de Letras (Revisa y aprueba):", value=st.session_state.lyrics_text, height=250)
                     
                     if st.button("🚀 Paso 2: Aprobar Letra y Renderizar Video"):
-                        # Guardar el archivo .txt para que el motor físico lo alinee
+                        # NOTA: En batch con letras manuales, solo renderizamos la primera canción cargada.
+                        temp_audio_txt = os.path.join("temp", os.path.splitext(audio_file.name)[0] + ".txt")
+                        temp_audio_path = os.path.join("temp", audio_file.name)
                         with open(temp_audio_txt, "w", encoding="utf-8") as f:
                             f.write(texto_editado)
                         
                         dur_val = ui_duracion if ui_duracion > 0 else None
-                        procesar_y_renderizar(dur_val, dur_val)
+                        procesar_y_renderizar(dur_val, dur_val, audio_file, temp_audio_path)
                         
             else:
                 st.info("Pega tu letra oficial aquí. La IA usará exactamente estas palabras y solo buscará en qué milisegundo se pronuncian para lograr una sincronización perfecta.")
@@ -398,6 +407,8 @@ elif menu == "🎛️ Generador":
                     if texto_original.strip() == "":
                         st.error("¡Por favor, pega la letra original en la caja de texto antes de continuar!")
                     else:
+                        temp_audio_txt = os.path.join("temp", os.path.splitext(audio_file.name)[0] + ".txt")
+                        temp_audio_path = os.path.join("temp", audio_file.name)
                         # Escribimos el .txt
                         with open(temp_audio_txt, "w", encoding="utf-8") as f:
                             f.write(texto_original.strip())
@@ -408,17 +419,20 @@ elif menu == "🎛️ Generador":
                             f.write(audio_file.getbuffer())
                             
                         dur_val = ui_duracion if ui_duracion > 0 else None
-                        procesar_y_renderizar(dur_val, dur_val)
+                        procesar_y_renderizar(dur_val, dur_val, audio_file, temp_audio_path)
                         
         else:
-            if st.button("🚀 Renderizar Video"):
-                # Guardar el archivo subido temporalmente
-                os.makedirs("temp", exist_ok=True)
-                with open(temp_audio_path, "wb") as f:
-                    f.write(audio_file.getbuffer())
-                
-                dur_val = ui_duracion if ui_duracion > 0 else None
-                procesar_y_renderizar(dur_val, dur_val)
+            if st.button("🚀 Renderizar Álbum Completo (Batch)"):
+                for single_audio_file in audio_files:
+                    st.write(f"⏳ **Iniciando:** {single_audio_file.name}")
+                    # Guardar el archivo subido temporalmente
+                    os.makedirs("temp", exist_ok=True)
+                    temp_audio_path = os.path.join("temp", single_audio_file.name)
+                    with open(temp_audio_path, "wb") as f:
+                        f.write(single_audio_file.getbuffer())
+                    
+                    dur_val = ui_duracion if ui_duracion > 0 else None
+                    procesar_y_renderizar(dur_val, dur_val, single_audio_file, temp_audio_path)
 
 elif menu == "🎬 Director IA":
     st.title("Director IA (Deep Learning)")
