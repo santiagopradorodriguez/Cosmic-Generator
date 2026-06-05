@@ -165,7 +165,7 @@ def generar_animacion_god_mode(
    
     # --- INICIALIZACIÓN DE BUFFERS FÍSICOS ---
     # Resolución reducida para la simulación (se escala después)
-    gs_scale = 4
+    gs_scale = 3
     gs_w, gs_h = WIDTH // gs_scale, HEIGHT // gs_scale
     
     # 1. Gray-Scott (Turing)
@@ -338,6 +338,11 @@ def generar_animacion_god_mode(
                 print("⚠️ Advertencia: Ningún motor seleccionado coincide con ACTOS. Usando todos.")
                 local_actos = ACTOS
 
+        # Hacer que el Modo Mix sea verdaderamente caótico/aleatorio en su orden
+        if allowed_engines is None or len(allowed_engines) > 1:
+            import random
+            random.shuffle(local_actos)
+
         # Optimizaciones de Memoria: Pre-alojar matrices para evitar fugas (Garbage Collector Overhead)
         bg_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
         overlay_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
@@ -373,10 +378,15 @@ def generar_animacion_god_mode(
             # CAPA 1: MULTIVERSO FÍSICO (20 ACTOS)
             # ============================
             
-            # Selector de escena basado en el tiempo
-            progreso = i / total_frames
-            idx_acto = int(progreso * len(local_actos))
-            if idx_acto >= len(local_actos): idx_acto = len(local_actos) - 1
+            # Selector de escena estructural (Basado en compases musicales)
+            if 'cut_frames' in audio_data and len(audio_data['cut_frames']) > 0:
+                idx_acto = int(np.searchsorted(audio_data['cut_frames'], i, side='right')) - 1
+                if idx_acto < 0: idx_acto = 0
+                idx_acto = idx_acto % len(local_actos)
+            else:
+                progreso = i / total_frames
+                idx_acto = int(progreso * len(local_actos))
+                if idx_acto >= len(local_actos): idx_acto = len(local_actos) - 1
             escena = local_actos[idx_acto]
 
             # MOD: Aleatoriedad al cambiar de escena
@@ -716,6 +726,12 @@ def generar_animacion_god_mode(
             if not consumer.is_alive():
                 print("Error: El hilo consumidor ha muerto. Abortando render.")
                 break
+            
+            # --- MEJORA CALIDAD VISUAL: SHARPEN SUTIL ---
+            kernel_sharpen = np.array([[-0.1, -0.1, -0.1],
+                                       [-0.1,  1.8, -0.1],
+                                       [-0.1, -0.1, -0.1]])
+            frame_final = cv2.filter2D(frame_final, -1, kernel_sharpen)
             
             try:
                 render_queue.put((i, frame_final, kick, harm, cymbals_val, textura, use_flash, use_lyrics), timeout=5.0)

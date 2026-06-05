@@ -175,7 +175,11 @@ elif menu == "🎛️ Generador":
                     "Red Neuronal Rápida (CPPN)"
                 ]
             )
-            ui_seed = st.number_input("Semilla (Seed)", value=42)
+            use_random_seed = st.checkbox("Semilla Aleatoria", value=True)
+            if not use_random_seed:
+                ui_seed = st.number_input("Semilla Manual", value=42)
+            else:
+                ui_seed = int(time.time() * 1000) % 1000000
             ui_duracion = st.number_input("Duración Test (Segundos, 0 = Canción Completa)", value=0, min_value=0, max_value=600)
             
         with col2:

@@ -18,19 +18,32 @@ class CamaraVirtual:
         self.shake_y = 0
         self.drift_x = 0
         self.drift_y = 0
+        self.t = 0.0
+        self.base_zoom = 1.0
 
     def update(self, energy, kick, snare):
-        self.drift_x += (random.random() - 0.5) * 2
-        self.drift_y += (random.random() - 0.5) * 2
-        target_zoom = 1.0 + (energy * 0.1) + (kick * 0.15)
-        self.zoom += (target_zoom - self.zoom) * 0.1
-        self.angle += 0.05 + (snare * 0.5)
-        if kick > 0.7:
-            self.shake_x = random.randint(-20, 20) * kick
-            self.shake_y = random.randint(-20, 20) * kick
+        self.t += 0.033 # asume ~30fps
+        
+        # Trayectorias orgánicas suaves (Lissajous)
+        self.drift_x = np.sin(self.t * 0.5) * 30.0 + np.sin(self.t * 0.1) * 20.0
+        self.drift_y = np.cos(self.t * 0.4) * 30.0 + np.sin(self.t * 0.2) * 20.0
+        
+        # Respiración del zoom y reactividad musical
+        self.base_zoom = 1.0 + np.sin(self.t * 0.2) * 0.05
+        target_zoom = self.base_zoom + (energy * 0.15) + (kick * 0.25)
+        self.zoom += (target_zoom - self.zoom) * 0.15
+        
+        # Rotación armónica
+        target_angle = np.sin(self.t * 0.15) * 5.0 + (snare * 2.0)
+        self.angle += (target_angle - self.angle) * 0.1
+        
+        # Shake violento
+        if kick > 0.6:
+            self.shake_x = random.uniform(-30, 30) * kick
+            self.shake_y = random.uniform(-30, 30) * kick
         else:
-            self.shake_x *= 0.8
-            self.shake_y *= 0.8
+            self.shake_x *= 0.7
+            self.shake_y *= 0.7
 
     def aplicar(self, frame):
         M = cv2.getRotationMatrix2D(self.center, self.angle, self.zoom)

@@ -47,12 +47,22 @@ def analizar_audio(ruta_audio, fps, duracion=None):
     cymbals = (cymbals_raw - np.min(cymbals_raw)) / (np.max(cymbals_raw) - np.min(cymbals_raw) + 1e-6)
     cymbals = np.resize(cymbals, total_frames)
     
+    # Detectar BPM y Beats (Frases estructurales cada 16 beats)
+    tempo, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=sr, hop_length=hop_length)
+    phrase_length = 16
+    cut_frames = beat_frames[::phrase_length] if len(beat_frames) > 0 else np.array([])
+    if len(cut_frames) == 0 or cut_frames[0] != 0:
+        cut_frames = np.insert(cut_frames, 0, 0)
+    if cut_frames[-1] < total_frames:
+        cut_frames = np.append(cut_frames, total_frames)
+    
     return {
         'y': y, 'sr': sr, 'total_frames': total_frames,
         'rms_perc': rms_perc, 'rms_harm': rms_harm,
         'cent': cent, 'dom_note': dom_note,
         'contrast_mean': contrast_mean, 'cymbals': cymbals,
-        'global_note': global_note
+        'global_note': global_note,
+        'tempo': tempo, 'cut_frames': cut_frames
     }
 
 import os
@@ -124,6 +134,15 @@ def analizar_stems(stem_folder, fps, duracion=None):
     global_chroma = np.sum(chroma_mix, axis=1)
     global_note = int(np.argmax(global_chroma))
     
+    # Detectar BPM y Beats (Frases estructurales cada 16 beats)
+    tempo, beat_frames = librosa.beat.beat_track(y=y_drums, sr=sr, hop_length=hop_length)
+    phrase_length = 16
+    cut_frames = beat_frames[::phrase_length] if len(beat_frames) > 0 else np.array([])
+    if len(cut_frames) == 0 or cut_frames[0] != 0:
+        cut_frames = np.insert(cut_frames, 0, 0)
+    if cut_frames[-1] < total_frames:
+        cut_frames = np.append(cut_frames, total_frames)
+    
     # Devolver estructura compatible con analizar_audio original pero expandida
     return {
         'y': y_mix, 'sr': sr, 'total_frames': total_frames,
@@ -131,5 +150,6 @@ def analizar_stems(stem_folder, fps, duracion=None):
         'rms_harm': stems_data['other_rms'], # Fallback legacy
         'cent': stems_data['other_cent'],    # Fallback legacy
         'stems': stems_data,                 # Nuevo diccionario multidimensional
-        'global_note': global_note           # Tonalidad Reina
+        'global_note': global_note,          # Tonalidad Reina
+        'tempo': tempo, 'cut_frames': cut_frames
     }

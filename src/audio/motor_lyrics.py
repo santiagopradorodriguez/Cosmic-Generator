@@ -533,8 +533,18 @@ class LyricsEngine:
         # Core text
         draw.text((x, y), word, font=font, fill=blanco_core)
         
-        # Convertir a numpy RGBA y mezclar (Alpha Compositing)
+        # Convertir a numpy RGBA
         img_np = np.array(img_pil)
+        
+        # --- ONDAS LÍQUIDAS Y DISTORSIÓN (EFECTO PSICODÉLICO) ---
+        if self.smoothed_energy > 0.1:
+            Y, X = np.mgrid[0:h, 0:w].astype(np.float32)
+            # Oscilación ondulante dependiente de la energía (kick) y el tiempo
+            map_x = X + np.sin(Y * 0.05 + time * 4.0) * (2.0 + self.smoothed_kick * 10.0)
+            map_y = Y + np.cos(X * 0.03 + time * 3.0) * (1.0 + self.smoothed_kick * 5.0)
+            img_np = cv2.remap(img_np, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+        
+        # Mezclar (Alpha Compositing)
         alpha = img_np[:, :, 3] / 255.0
         for c in range(3):
             frame[:, :, c] = frame[:, :, c] * (1.0 - alpha) + img_np[:, :, c] * alpha
