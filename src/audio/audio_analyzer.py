@@ -128,9 +128,12 @@ def analizar_stems(stem_folder, fps, duracion=None):
     y_mix = y_bass + y_drums + y_vocals + y_other
     y_mix = y_mix / (np.max(np.abs(y_mix)) + 1e-6)
     
-    # Extraer Tonalidad Reina (Global Note) de la mezcla armónica (pads + voces)
+    # Extraer Tonalidad Reina (Global Note) y dom_note
     y_harmonic_mix = y_other + y_vocals
     chroma_mix = librosa.feature.chroma_stft(y=y_harmonic_mix, sr=sr, hop_length=hop_length)
+    dom_note = np.argmax(chroma_mix, axis=0)
+    dom_note = np.resize(dom_note, total_frames)
+    
     global_chroma = np.sum(chroma_mix, axis=1)
     global_note = int(np.argmax(global_chroma))
     
@@ -149,6 +152,9 @@ def analizar_stems(stem_folder, fps, duracion=None):
         'rms_perc': stems_data['drums_rms'], # Fallback legacy
         'rms_harm': stems_data['other_rms'], # Fallback legacy
         'cent': stems_data['other_cent'],    # Fallback legacy
+        'dom_note': dom_note,                # Fallback legacy
+        'contrast_mean': stems_data['other_cent'], # Fallback legacy
+        'cymbals': stems_data['other_cent'],       # Fallback legacy
         'stems': stems_data,                 # Nuevo diccionario multidimensional
         'global_note': global_note,          # Tonalidad Reina
         'tempo': tempo, 'cut_frames': cut_frames

@@ -188,6 +188,10 @@ elif menu == "🎛️ Generador":
             use_flash = st.checkbox("Flash/Bloom", value=True)
             use_chroma = st.checkbox("Activar Cromestesia Global (Color por Vibra de la Canción)", value=False)
             use_stems = st.checkbox("Modo Sinestesia (Usar Stems si existen)", value=False, help="Si ya usaste el Separador de Pistas, la física reaccionará de forma independiente a cada instrumento.")
+            
+            use_superposition = False
+            if use_stems:
+                use_superposition = st.checkbox("🌌 Modo Multiverso (Superposición)", value=False, help="Cada instrumento ejecuta su propio motor físico a la vez (Requiere mucho CPU).")
             use_lyrics = st.checkbox("Incrustar Letra (Lyrics Neón)", value=False)
             lyrics_pos = "Abajo"
             if use_lyrics:
@@ -296,6 +300,7 @@ elif menu == "🎛️ Generador":
                         lyrics_pos=lyrics_pos,
                         use_stems=use_stems,
                         stem_folder=os.path.join(os.getcwd(), "STEMS", "htdemucs", os.path.splitext(audio_file.name)[0]),
+                        use_superposition=use_superposition,
                         progress_callback=update_progress
                     )
                     progress_bar.progress(100)

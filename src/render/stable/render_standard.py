@@ -50,6 +50,7 @@ def generar_animacion_god_mode(
     lyrics_pos="Abajo", 
     use_stems=False, 
     stem_folder=None, 
+    use_superposition=False,
     global_cmap=None, 
     progress_callback=None
 ):
@@ -375,8 +376,7 @@ def generar_animacion_god_mode(
             nota = int(nota) % 12
            
             # ============================
-            # CAPA 1: MULTIVERSO FÍSICO (20 ACTOS)
-            # ============================
+            progreso = i / total_frames
             
             # Selector de escena estructural (Basado en compases musicales)
             if 'cut_frames' in audio_data and len(audio_data['cut_frames']) > 0:
@@ -384,7 +384,6 @@ def generar_animacion_god_mode(
                 if idx_acto < 0: idx_acto = 0
                 idx_acto = idx_acto % len(local_actos)
             else:
-                progreso = i / total_frames
                 idx_acto = int(progreso * len(local_actos))
                 if idx_acto >= len(local_actos): idx_acto = len(local_actos) - 1
             escena = local_actos[idx_acto]
@@ -413,7 +412,56 @@ def generar_animacion_god_mode(
             dt_dynamic = 1.0 / (1.0 + kick * 2.0)
 
             # --- EJECUTAR MOTOR SEGÚN LA ESCENA ---
-            if escena['engine'] == 'GS':
+            if use_superposition and 'stems' in audio_data:
+                # 1. BASS -> Gray-Scott (Magma)
+                f_gs = 0.04 + (bass_rms * 0.02)
+                k_gs = 0.06 - (drums_onsets * 0.005)
+                if np.mean(V) < 0.001 or np.mean(V) > 0.99:
+                     V[gs_h//2-20:gs_h//2+20, gs_w//2-20:gs_w//2+20] = np.random.uniform(0.4, 0.6, (40, 40))
+                for _ in range(8):
+                    simulacion_gray_scott(U, V, U_next, V_next, Da, Db, f_gs, k_gs, dt=1.0 * dt_dynamic)
+                    U, U_next = U_next, U
+                    V, V_next = V_next, V
+                img_gs = V / (np.max(V) + 1e-6)
+                
+                # 2. VOCALS -> Wave (Cyan water)
+                if vocals_rms > 0.2:
+                    ry, rx = np.random.randint(1, gs_h-1), np.random.randint(1, gs_w-1)
+                    wave_u[ry, rx] += np.random.uniform(-1, 1) * vocals_rms
+                if np.max(np.abs(wave_u)) > 50.0:
+                    wave_u *= 0.5
+                    wave_u_prev *= 0.5
+                # Fill missing seed_mask
+                simulacion_ondas(wave_u, wave_u_prev, wave_u_next, 0.995, 0.1 * dt_dynamic, None)
+                wave_u_prev, wave_u, wave_u_next = wave_u, wave_u_next, wave_u_prev
+                img_wave = np.clip(0.5 + (wave_u * 0.5), 0, 1)
+                
+                # 3. DRUMS -> Particles (White explosions)
+                grad_y, grad_x = np.gradient(wave_u) 
+                force_field = np.stack((grad_x, grad_y), axis=2) * 50.0
+                force_field = np.nan_to_num(force_field, nan=0.0)
+                update_particles(p_pos, p_vel, force_field, gs_w, gs_h, 0.95, 2.0 * (1 + drums_onsets * 3), None)
+                img_part = np.zeros((gs_h, gs_w), dtype=np.float32)
+                for pi in range(num_particles):
+                    px, py = int(p_pos[pi, 0]), int(p_pos[pi, 1])
+                    if 0 <= px < gs_w and 0 <= py < gs_h:
+                        img_part[py, px] = 0.8
+                img_part = cv2.GaussianBlur(img_part, (3, 3), 0)
+                
+                # 4. OTHER -> KS (Green neon)
+                if other_cent > 0.5: ks_u += np.random.normal(0, 0.5, ks_u.shape)
+                if np.max(np.abs(ks_u)) > 1e3 or np.any(np.isnan(ks_u)):
+                    ks_u = np.zeros_like(ks_u) + np.random.normal(0, 0.1, ks_u.shape)
+                for _ in range(4):
+                    simulacion_ks(ks_u, ks_u_next, dt=0.1 * dt_dynamic)
+                    ks_u, ks_u_next = ks_u_next, ks_u
+                ks_u = np.nan_to_num(ks_u, nan=0.0, posinf=10.0, neginf=-10.0)
+                ks_blur = cv2.GaussianBlur(ks_u, (5, 5), 0)
+                min_v, max_v = np.nanmin(ks_blur), np.nanmax(ks_blur)
+                denom = max_v - min_v
+                img_ks = np.zeros_like(ks_blur) if denom < 1e-6 else (ks_blur - min_v) / denom
+
+            elif not use_superposition and escena['engine'] == 'GS':
                 # Gray-Scott
                 # SINESTESIA DE FORMA: La textura del sonido define la "biología"
                 # Sonido suave (textura baja) = Manchas (f alto)
@@ -635,15 +683,37 @@ def generar_animacion_god_mode(
                 img_norm = cv2.GaussianBlur(img_norm, (3, 3), 0)
 
             # --- COLOREADO Y EFECTOS ---
-            cmap_name = global_cmap if global_cmap else escena['cmap']
-            cmap = plt.get_cmap(cmap_name)
-            
-            # CORRECCIÓN GAMMA (CONTRASTE):
-            # FIX: Restauramos gamma a 1.2 para no aplastar la simulación a negro
-            img_norm = np.clip(img_norm, 0.0, 1.0)
-            img_norm = np.power(img_norm, 1.2) 
-            
-            bg_layer = (cmap(img_norm)[:, :, :3] * 255).astype(np.uint8)
+            if use_superposition and 'stems' in audio_data:
+                cmap_gs = plt.get_cmap('magma')
+                cmap_wave = plt.get_cmap('GnBu') # cyan water
+                cmap_ks = plt.get_cmap('plasma')
+                
+                layer_gs = (cmap_gs(np.clip(img_gs**1.2, 0, 1))[:, :, :3] * 255).astype(np.uint8)
+                layer_wave = (cmap_wave(np.clip(img_wave**1.2, 0, 1))[:, :, :3] * 255).astype(np.uint8)
+                layer_ks = (cmap_ks(np.clip(img_ks**1.2, 0, 1))[:, :, :3] * 255).astype(np.uint8)
+                
+                layer_part = np.zeros((gs_h, gs_w, 3), dtype=np.uint8)
+                layer_part[img_part > 0] = 255
+                
+                layer_gs = cv2.resize(layer_gs, (WIDTH, HEIGHT), interpolation=cv2.INTER_LINEAR)
+                layer_wave = cv2.resize(layer_wave, (WIDTH, HEIGHT), interpolation=cv2.INTER_LINEAR)
+                layer_ks = cv2.resize(layer_ks, (WIDTH, HEIGHT), interpolation=cv2.INTER_LINEAR)
+                layer_part = cv2.resize(layer_part, (WIDTH, HEIGHT), interpolation=cv2.INTER_LINEAR)
+                
+                # Fusión aditiva HDR
+                bg_layer = cv2.addWeighted(layer_gs, 0.6, layer_wave, 0.6, 0)
+                bg_layer = cv2.addWeighted(bg_layer, 1.0, layer_ks, 0.5, 0)
+                bg_layer = cv2.add(bg_layer, layer_part)
+            else:
+                cmap_name = global_cmap if global_cmap else escena['cmap']
+                cmap = plt.get_cmap(cmap_name)
+                
+                # CORRECCIÓN GAMMA (CONTRASTE):
+                # FIX: Restauramos gamma a 1.2 para no aplastar la simulación a negro
+                img_norm = np.clip(img_norm, 0.0, 1.0)
+                img_norm = np.power(img_norm, 1.2) 
+                
+                bg_layer = (cmap(img_norm)[:, :, :3] * 255).astype(np.uint8)
             
             # EFECTO PSICODÉLICO 1: Rotación de Color Global
             # El color gira lentamente, y rápido cuando hay mucha energía armónica
