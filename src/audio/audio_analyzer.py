@@ -113,6 +113,22 @@ def analizar_audio(ruta_audio, fps, duracion=None):
         cut_frames = np.insert(cut_frames, 0, 0)
     if cut_frames[-1] < total_frames:
         cut_frames = np.append(cut_frames, total_frames)
+
+    # --- CALCULAR ENERGÍA PROMEDIO DE CADA SECCIÓN ---
+    cut_energies = []
+    for c_idx in range(len(cut_frames) - 1):
+        start_f = int(cut_frames[c_idx])
+        end_f = int(cut_frames[c_idx+1])
+        if end_f > start_f:
+            avg_rms = np.mean(rms_global[start_f:end_f])
+        else:
+            avg_rms = 0.0
+        cut_energies.append(float(avg_rms))
+        
+    if len(cut_energies) > 0 and np.max(cut_energies) > 0:
+        cut_energies = np.array(cut_energies) / np.max(cut_energies)
+    else:
+        cut_energies = np.zeros(max(1, len(cut_frames) - 1))
     
     return {
         'y': y, 'sr': sr, 'total_frames': total_frames,
@@ -120,7 +136,7 @@ def analizar_audio(ruta_audio, fps, duracion=None):
         'cent': cent, 'dom_note': dom_note,
         'contrast_mean': contrast_mean, 'cymbals': cymbals,
         'global_note': global_note,
-        'tempo': tempo, 'cut_frames': cut_frames
+        'tempo': tempo, 'cut_frames': cut_frames, 'cut_energies': cut_energies
     }
 
 import os
@@ -260,6 +276,23 @@ def analizar_stems(stem_folder, fps, duracion=None):
         cut_frames = np.insert(cut_frames, 0, 0)
     if cut_frames[-1] < total_frames:
         cut_frames = np.append(cut_frames, total_frames)
+        
+    # --- CALCULAR ENERGÍA PROMEDIO DE CADA SECCIÓN (STEMS) ---
+    cut_energies = []
+    # Usamos rms_global para decidir la intensidad
+    for c_idx in range(len(cut_frames) - 1):
+        start_f = int(cut_frames[c_idx])
+        end_f = int(cut_frames[c_idx+1])
+        if end_f > start_f:
+            avg_rms = np.mean(rms_global[start_f:end_f])
+        else:
+            avg_rms = 0.0
+        cut_energies.append(float(avg_rms))
+        
+    if len(cut_energies) > 0 and np.max(cut_energies) > 0:
+        cut_energies = np.array(cut_energies) / np.max(cut_energies)
+    else:
+        cut_energies = np.zeros(max(1, len(cut_frames) - 1))
     
     # Devolver estructura compatible con analizar_audio original pero expandida
     return {
@@ -272,5 +305,5 @@ def analizar_stems(stem_folder, fps, duracion=None):
         'cymbals': stems_data['other_cent'],       # Fallback legacy
         'stems': stems_data,                 # Nuevo diccionario multidimensional
         'global_note': global_note,          # Tonalidad Reina
-        'tempo': tempo, 'cut_frames': cut_frames
+        'tempo': tempo, 'cut_frames': cut_frames, 'cut_energies': cut_energies
     }

@@ -14,10 +14,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 # Importar nuestros módulos
 from core.efectos_visuales import CamaraVirtual, MotorFX
-from core.config import WIDTH, HEIGHT, FPS, ACTOS, NOTE_PALETTE
+from core.config import WIDTH, HEIGHT, FPS, ACTOS, ACTOS_LOW_ENERGY, ACTOS_MID_ENERGY, ACTOS_HIGH_ENERGY, NOTE_PALETTE
 from audio.audio_analyzer import analizar_audio
 from core.video_utils import unir_video_con_musica
-from core.visual_entities import EspirituProcedural, SuperformaProcedural, LorenzSwarm, GeneradorHojas, BoidsSwarm
+from core.visual_entities import EspirituProcedural, SuperformaProcedural, LorenzSwarm, GeneradorHojas, BoidsSwarm, MotorRelatividad
 from core.rostros_alienigenas import AlienGenerator
 
 from core.nucleo_visual import (
@@ -54,7 +54,8 @@ def generar_animacion_god_mode(
     use_superposition=False,
     global_cmap=None, 
     progress_callback=None,
-    hq_mode=False
+    hq_mode=False,
+    is_reel=False
 ):
     """
     Función principal encargada de renderizar la animación visual reactiva al audio utilizando múltiples motores físicos.
@@ -156,13 +157,20 @@ def generar_animacion_god_mode(
     if use_lyrics:
         try:
             from audio.motor_lyrics import LyricsEngine
-            # Pasamos progress_callback para que la UI se mueva durante la extracción/alineación
-            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion, position=lyrics_pos, progress_callback=progress_callback)
+            print(f"--- 1.5. Extrayendo/Alineando Letras ---")
+            lyrics_engine = LyricsEngine(ruta_audio, max_duration=duracion, position=lyrics_pos, progress_callback=progress_callback, is_reel=is_reel)
         except Exception as e:
             print(f"Advertencia: Error cargando LyricsEngine: {e}")
 
     print(f"--- 2. Inicializando Motor de Física (Numba Accelerated) ---")
 
+    # Reel Mode Resolution Override
+    if is_reel:
+        WIDTH, HEIGHT = 1080, 1920
+    else:
+        from core.config import WIDTH as C_WIDTH, HEIGHT as C_HEIGHT
+        WIDTH, HEIGHT = C_WIDTH, C_HEIGHT
+        
     W, H = WIDTH, HEIGHT
     aspect_ratio = WIDTH / HEIGHT
    
@@ -236,6 +244,9 @@ def generar_animacion_god_mode(
     
     # --- INICIALIZAR GEOMETRÍA SAGRADA ---
     superforma = SuperformaProcedural(WIDTH, HEIGHT)
+    
+    # --- INICIALIZAR AGUJERO NEGRO (RELATIVIDAD) ---
+    motor_relatividad = MotorRelatividad(WIDTH, HEIGHT)
     
     # --- INICIALIZAR ESPÍRITUS ---
     # Creamos 7 entidades con semillas aleatorias para que sean distintas
@@ -412,15 +423,36 @@ def generar_animacion_god_mode(
             # ============================
             progreso = i / total_frames
             
-            # Selector de escena estructural (Basado en compases musicales)
+            # Selector de escena estructural dinámico basado en Energía
             if 'cut_frames' in audio_data and len(audio_data['cut_frames']) > 0:
                 idx_acto = int(np.searchsorted(audio_data['cut_frames'], i, side='right')) - 1
                 if idx_acto < 0: idx_acto = 0
-                idx_acto = idx_acto % len(local_actos)
+                
+                # Despacho por energía
+                if 'cut_energies' in audio_data and idx_acto < len(audio_data['cut_energies']):
+                    energy = audio_data['cut_energies'][idx_acto]
+                    
+                    if energy > 0.7:
+                        pool = ACTOS_HIGH_ENERGY
+                    elif energy < 0.35:
+                        pool = ACTOS_LOW_ENERGY
+                    else:
+                        pool = ACTOS_MID_ENERGY
+                        
+                    # Aplicar filtros si el usuario restringió motores
+                    if allowed_engines:
+                        pool = [a for a in pool if a['engine'] in allowed_engines]
+                        
+                    if not pool:
+                        pool = local_actos # Fallback global
+                else:
+                    pool = local_actos
+                    
+                escena = pool[idx_acto % len(pool)]
             else:
                 idx_acto = int(progreso * len(local_actos))
                 if idx_acto >= len(local_actos): idx_acto = len(local_actos) - 1
-            escena = local_actos[idx_acto]
+                escena = local_actos[idx_acto]
 
             # MOD: Aleatoriedad al cambiar de escena
             # MOD: Aleatoriedad al cambiar de escena y configuración inicial
@@ -430,12 +462,13 @@ def generar_animacion_god_mode(
                 use_lorenz = ('lorenz' in allowed_engines) if allowed_engines else True
                 use_geometry = ('ifs' in allowed_engines) if allowed_engines else True
                 
-                chance_lorenz = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'lorenz' in allowed_engines) else 0.3
+                chance_lorenz = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'lorenz' in allowed_engines) else 0.15
                 
-                scene_flags['lorenz'] = (np.random.rand() < chance_lorenz) and use_lorenz
+                scene_flags['lorenz'] = True if escena['engine'] == 'lorenz' else ((np.random.rand() < chance_lorenz) and use_lorenz)
                 scene_flags['leaves'] = np.random.rand() < 0.3
-                chance_superforma = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'ifs' in allowed_engines) else 0.4
-                scene_flags['superforma'] = (np.random.rand() < chance_superforma) and use_geometry
+                scene_flags['spirits'] = np.random.rand() < 0.2
+                chance_superforma = 1.0 if (allowed_engines and len(allowed_engines) == 1 and 'ifs' in allowed_engines) else 0.05
+                scene_flags['superforma'] = True if escena['engine'] == 'ifs' else ((np.random.rand() < chance_superforma) and use_geometry)
             
             bg_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
             img_norm = np.zeros((gs_h, gs_w), dtype=np.float32)
@@ -694,24 +727,34 @@ def generar_animacion_god_mode(
                 img_norm /= (np.max(img_norm) + 1e-6)
                 
             elif escena['engine'] == 'ifs':
-                # Geometría Sagrada (Fractales Iterated Function System)
-                angle = i * 0.05 + (cymbals_val * 2.0)
-                cos_a, sin_a = np.cos(angle), np.sin(angle)
+                # Geometría Sagrada (Mandalas Dinámicos en lugar de triángulos)
+                # Forzamos un mínimo de 5 lados (Pentágono/Hexágono) para que parezca una flor/estrella y NO un triángulo
+                num_vertices = 5 + int(np.clip(textura * 4, 0, 4))
                 
-                # Fractales mutantes (Transformaciones afines base Helecho/Sierpinski)
-                transform_matrix = np.array([
-                    [0.0, 0.0, 0.0, 0.16 + harm*0.1, 0.0, 0.0],
-                    [0.85*cos_a, -0.04, 0.04, 0.85*sin_a, 0.0, 1.6 + kick],
-                    [0.2, -0.26, 0.23, 0.22, 0.0, 1.6 - textura],
-                    [-0.15, 0.28, 0.26, 0.24, 0.0, 0.44]
-                ], dtype=np.float32)
+                # Rotación súper lenta (Casi mística)
+                global_angle = i * 0.0003
                 
-                prob = np.array([0.01, 0.85, 0.07, 0.07], dtype=np.float32)
+                # Para asegurar que siempre se vea como un fractal (con huecos), s debe ser menor al límite.
+                base_s = 0.35
+                    
+                # Hacemos que "respire" hacia ABAJO con la música
+                s = base_s - (harm * 0.1)
+                s = np.clip(s, 0.1, 0.49)
                 
-                ifs_grid *= (0.7 + textura * 0.2) # Decay dinámico
+                transform_matrix = np.zeros((num_vertices, 6), dtype=np.float32)
+                prob = np.ones(num_vertices, dtype=np.float32) / num_vertices
                 
-                iters = 20000 + int(kick * 50000)
-                simulacion_ifs(ifs_grid, iters, transform_matrix, prob, cx=gs_w/8, cy=gs_h/8)
+                R = 4.0 
+                for v in range(num_vertices):
+                    angle = global_angle + (2 * np.pi * v / num_vertices)
+                    vx = R * np.cos(angle)
+                    vy = R * np.sin(angle)
+                    transform_matrix[v] = [s, 0.0, 0.0, s, (1-s)*vx, (1-s)*vy]
+                
+                ifs_grid *= 0.65 # Decay rápido para que cambie de forma fluidamente
+                
+                iters = 30000 + int(kick * 70000)
+                simulacion_ifs(ifs_grid, iters, transform_matrix, prob, cx=gs_w/6, cy=gs_h/6)
                 
                 img_norm = np.log1p(ifs_grid)
                 img_norm = (img_norm - np.min(img_norm)) / (np.max(img_norm) - np.min(img_norm) + 1e-6)
@@ -784,15 +827,18 @@ def generar_animacion_god_mode(
             # --- UPDATE GEOMETRÍA Y OBJETOS (OPENCV NEON) ---
             overlay_layer = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
             # 1. Lorenz Swarm (Sigue a los platillos)
-            dt_lorenz = 0.005
+            dt_lorenz = 0.0003 # Ralentizado drásticamente para movimiento elegante
+            if cymbals_val > 0.6:
+                dt_lorenz = 0.0006
             
             # Extraer color dominante de la nota actual para las capas superiores
             target_color_bgr = NOTE_PALETTE[nota]
             
             lorenz_color = target_color_bgr if use_chroma else None
             lorenz_swarm.update(overlay_layer, dt_lorenz, kick, cymbals_val, visible=scene_flags['lorenz'], color_bgr_override=lorenz_color)
-            if escena['engine'] == 'lorenz':
-                print(f"Frame {i} Lorenz Overlay Max: {np.max(overlay_layer)}")
+
+            if escena['engine'] == 'RELATIVITY':
+                motor_relatividad.render(bg_layer, kick, harm, target_color_bgr)
             
             # 2. Generador de Hojas
             if scene_flags['leaves']:
@@ -810,8 +856,8 @@ def generar_animacion_god_mode(
                 superforma.update(overlay_layer, i*0.02, kick, harm, color_mpl)
             
             # 4. Espíritus (Metaballs/Trails)
-            # FIX: Si estamos en el modo puro Caos 3D, desactivamos los espíritus para que no tapen las líneas del atractor
-            if escena['engine'] != 'lorenz':
+            # FIX: Hacemos que los espíritus aparezcan aleatoriamente con baja probabilidad
+            if scene_flags.get('spirits', False) and escena['engine'] != 'lorenz':
                 num_active_spirits = int(1 + (num_espiritus - 1) * (progreso ** 1.5))
                 for idx, esp in enumerate(espiritus):
                     if idx < num_active_spirits:

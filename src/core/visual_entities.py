@@ -580,3 +580,82 @@ class BoidsSwarm:
             
         for p in self.pos:
             cv2.circle(frame, (int(p[0]), int(p[1])), int(1 + kick * 5), color, -1)
+
+
+class MotorRelatividad:
+    """
+    Motor Físico: Relatividad General (Lentes Gravitacionales y Agujeros Negros).
+    Aproximación ultra-optimizada 2D de las métricas de Schwarzschild y Kerr.
+    """
+    def __init__(self, w, h):
+        self.w = w
+        self.h = h
+        self.center = (w // 2, h // 2)
+        
+        # 1. Crear campo estelar base (Vía Láctea estática)
+        self.starfield = np.zeros((h, w, 3), dtype=np.uint8)
+        num_stars = int(w * h * 0.003) 
+        for _ in range(num_stars):
+            x = np.random.randint(0, w)
+            y = np.random.randint(0, h)
+            brightness = np.random.randint(100, 255)
+            # Estrellas azules, blancas o naranjas
+            color_type = np.random.random()
+            if color_type > 0.8:
+                color = (255, 200, 150) # Naranja
+            elif color_type > 0.4:
+                color = (255, 255, 255) # Blanca
+            else:
+                color = (200, 220, 255) # Azul
+            cv2.circle(self.starfield, (x, y), np.random.randint(1, 3), color, -1)
+            
+        # Nubes de polvo galáctico
+        dust = cv2.resize(np.random.randint(0, 30, (h//10, w//10), dtype=np.uint8), (w, h), interpolation=cv2.INTER_CUBIC)
+        dust_color = cv2.applyColorMap(dust, cv2.COLORMAP_TWILIGHT_SHIFTED)
+        self.starfield = cv2.addWeighted(self.starfield, 1.0, dust_color, 0.4, 0)
+        
+        self.accretion_phase = 0.0
+
+    def render(self, frame, kick, harm, color_bgr):
+        from core.nucleo_visual import compute_lensing_map
+        
+        # Dinámicas Reactivas
+        Rs = (self.h * 0.12) + (kick * self.h * 0.08) # El radio pulsa violentamente
+        spin = 0.05 + harm * 0.2 # Rotación del espacio-tiempo
+        
+        # Capa temporal para dibujar el disco de acreción ANTES de distorsionar
+        space_layer = self.starfield.copy()
+        
+        # Disco de Acreción (Plasma orbital)
+        self.accretion_phase += 0.05 + (kick * 0.1)
+        disk_radius_x = int(Rs * 3.5)
+        disk_radius_y = int(Rs * 1.2)
+        
+        # Dibujar múltiples anillos concéntricos
+        for i in range(5):
+            thickness = int(2 + kick * 5)
+            axes = (disk_radius_x + i*15, disk_radius_y + i*5)
+            angle = np.degrees(self.accretion_phase * (0.5 if i%2==0 else -0.5))
+            
+            # Color del plasma reacciona al harm y kick
+            plasma_color = (
+                int(min(255, color_bgr[0] + kick*100)),
+                int(min(255, color_bgr[1] + harm*100)),
+                int(min(255, color_bgr[2] + 200)) # Core azul/blanco muy caliente
+            )
+            cv2.ellipse(space_layer, self.center, axes, angle, 0, 360, plasma_color, thickness)
+            
+        # 1. Generar Lente Gravitacional (Numba Ultra-Fast)
+        map_x, map_y, eh_mask = compute_lensing_map(self.w, self.h, self.center[0], self.center[1], Rs, spin)
+        
+        # 2. Aplicar deformación del espacio-tiempo (Doblega las estrellas y el disco!)
+        distorted_space = cv2.remap(space_layer, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
+        
+        # El horizonte de sucesos es negro absoluto
+        distorted_space[eh_mask] = (0, 0, 0)
+        
+        # Halo de radiación de Hawking (Glow sutil justo en el borde)
+        cv2.circle(distorted_space, self.center, int(Rs)+2, color_bgr, 2)
+        
+        # Fusión aditiva en el frame principal
+        cv2.addWeighted(frame, 0.4, distorted_space, 1.0, 0, dst=frame)

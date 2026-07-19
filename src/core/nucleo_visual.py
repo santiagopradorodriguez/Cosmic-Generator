@@ -327,5 +327,46 @@ def simulacion_ifs(grid, iters, transform_matrix, prob, cx, cy):
         px = int(x * cx + w/2)
         py = int(y * cy + h/2)
         
-        if 0 <= px < w and 0 <= py < h:
+        # Ignorar las primeras 50 iteraciones para no dibujar el rastro desde el origen
+        if i > 50 and 0 <= px < w and 0 <= py < h:
             grid[py, px] += 1.0
+
+
+@jit(nopython=True, parallel=True, fastmath=True)
+def compute_lensing_map(width, height, center_x, center_y, Rs, spin, epsilon=1e-5):
+    """
+    Computa el mapa de distorsión vectorial 2D para simular una Lente Gravitacional 
+    de un Agujero Negro usando una métrica de Schwarzschild modificada con 
+    Frame-Dragging (Efecto Lense-Thirring de Kerr).
+    """
+    map_x = np.empty((height, width), dtype=np.float32)
+    map_y = np.empty((height, width), dtype=np.float32)
+    event_horizon_mask = np.zeros((height, width), dtype=np.bool_)
+
+    for y in prange(height):
+        for x in range(width):
+            dx = x - center_x
+            dy = y - center_y
+            r_sq = dx**2 + dy**2
+            r = np.sqrt(r_sq) + epsilon
+            
+            if r < Rs:
+                # Dentro del Horizonte de Sucesos
+                map_x[y, x] = x
+                map_y[y, x] = y
+                event_horizon_mask[y, x] = True
+            else:
+                # 1. Deflexión Radial (Schwarzschild Lensing)
+                r_prime = r + (Rs**2) / r
+                
+                # 2. Rotación de Lense-Thirring (Kerr Frame-Dragging)
+                theta = np.arctan2(dy, dx)
+                d_theta = spin * (Rs**3) / (r**3 + epsilon)
+                theta_prime = theta + d_theta
+                
+                # Reconstruir coordenadas X, Y
+                map_x[y, x] = center_x + r_prime * np.cos(theta_prime)
+                map_y[y, x] = center_y + r_prime * np.sin(theta_prime)
+                event_horizon_mask[y, x] = False
+                
+    return map_x, map_y, event_horizon_mask

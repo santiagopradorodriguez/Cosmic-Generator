@@ -175,7 +175,8 @@ elif menu == "🎛️ Generador":
                     "Caos 3D (Atractores de Lorenz)",
                     "Geometría Sagrada (Fractales IFS)",
                     "Red Neuronal Rápida (CPPN)",
-                    "Entidades Alienígenas (Pareidolia)"
+                    "Entidades Alienígenas (Pareidolia)",
+                    "Relatividad General (Agujeros Negros)"
                 ]
             )
             use_random_seed = st.checkbox("Semilla Aleatoria", value=True)
@@ -184,6 +185,8 @@ elif menu == "🎛️ Generador":
             else:
                 ui_seed = int(time.time() * 1000) % 1000000
             ui_duracion = st.number_input("Duración Test (Segundos, 0 = Canción Completa)", value=0, min_value=0, max_value=600)
+            ui_video_format = st.radio("Formato de Video", ["Horizontal 16:9 (1280x720) - YouTube/PC", "📱 Vertical 9:16 (1080x1920) - Reel/TikTok"], index=0)
+            is_reel = "Vertical" in ui_video_format
             
         with col2:
             use_spirits = st.checkbox("Usar Espíritus", value=True)
@@ -220,6 +223,7 @@ elif menu == "🎛️ Generador":
                     e8 = st.checkbox("Geometría Sagrada (Fractales IFS)", value=False)
                     e9 = st.checkbox("Red Neuronal Rápida (CPPN)", value=True)
                     e10 = st.checkbox("Entidades Alienígenas (Pareidolia)", value=True)
+                    e11 = st.checkbox("Relatividad General (Agujero Negro)", value=True)
                 
                 if e1: custom_engines_list.append('GS')
                 if e2: custom_engines_list.append('KS')
@@ -232,6 +236,7 @@ elif menu == "🎛️ Generador":
                 if e8: custom_engines_list.append('ifs')
                 if e9: custom_engines_list.append('CPPN')
                 if e10: custom_engines_list.append('ALIEN')
+                if e11: custom_engines_list.append('RELATIVITY')
                 
         # Determinar allowed_engines final basado en el selectbox principal
         if modo_render == "Mix (Todos los Motores)":
@@ -258,6 +263,8 @@ elif menu == "🎛️ Generador":
             allowed_engines_list = ['CPPN']
         elif modo_render == "Entidades Alienígenas (Pareidolia)":
             allowed_engines_list = ['ALIEN']
+        elif modo_render == "Relatividad General (Agujeros Negros)":
+            allowed_engines_list = ['RELATIVITY']
         else:
             allowed_engines_list = custom_engines_list
             
@@ -308,7 +315,8 @@ elif menu == "🎛️ Generador":
                         stem_folder=os.path.join(os.getcwd(), "STEMS", "htdemucs", os.path.splitext(target_audio_file.name)[0]),
                         use_superposition=use_superposition,
                         progress_callback=update_progress,
-                        hq_mode=hq_mode
+                        hq_mode=hq_mode,
+                        is_reel=is_reel
                     )
                     progress_bar.progress(100)
                     
@@ -317,7 +325,12 @@ elif menu == "🎛️ Generador":
                         unir_video_con_musica(temp_video, target_audio_path, final_video, duracion=mix_dur_val)
                         progress_bar.progress(100)
                         st.success(f"✅ ¡Video generado con éxito! Guardado en: {final_video}")
-                        st.video(final_video)
+                        if is_reel:
+                            col_v1, col_v2, col_v3 = st.columns([1, 2, 1])
+                            with col_v2:
+                                st.video(final_video)
+                        else:
+                            st.video(final_video)
                         with open(final_video, "rb") as file:
                             st.download_button(
                                 label="💾 Descargar Video Generado",
@@ -352,6 +365,7 @@ elif menu == "🎛️ Generador":
                 if st.button("📝 Paso 1: Extraer Letra"):
                     # Guardar el archivo subido temporalmente para Whisper
                     os.makedirs("temp", exist_ok=True)
+                    temp_audio_path = os.path.join("temp", audio_file.name)
                     with open(temp_audio_path, "wb") as f:
                         f.write(audio_file.getbuffer())
                         
@@ -409,9 +423,15 @@ elif menu == "🎛️ Generador":
                     else:
                         temp_audio_txt = os.path.join("temp", os.path.splitext(audio_file.name)[0] + ".txt")
                         temp_audio_path = os.path.join("temp", audio_file.name)
+                        temp_audio_json = os.path.join("temp", os.path.splitext(audio_file.name)[0] + ".json")
+                        
                         # Escribimos el .txt
                         with open(temp_audio_txt, "w", encoding="utf-8") as f:
                             f.write(texto_original.strip())
+                            
+                        # Eliminar el JSON antiguo para forzar la re-alineación desde cero
+                        if os.path.exists(temp_audio_json):
+                            os.remove(temp_audio_json)
                         
                         # También tenemos que asegurar que el audio se extraiga para el engine
                         os.makedirs("temp", exist_ok=True)

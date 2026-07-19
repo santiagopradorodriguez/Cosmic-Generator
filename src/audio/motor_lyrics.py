@@ -69,13 +69,14 @@ def transcribir_audio_para_edicion(audio_path, model_size="medium", max_duration
         return f"Error al transcribir el audio. Detalles técnicos: {e}"
 
 class LyricsEngine:
-    def __init__(self, audio_path, max_duration=None, position="Abajo", progress_callback=None):
+    def __init__(self, audio_path, max_duration=None, position="Abajo", progress_callback=None, is_reel=False):
         """
         Inicializa el motor de lyrics.
         :param audio_path: Ruta al archivo de audio.
         :param max_duration: Si se especifica, solo procesa esta cantidad de segundos.
         :param position: "Abajo" o "Centro".
         :param progress_callback: Función f(current, total) para reportar progreso a la UI.
+        :param is_reel: Si es True, activa formato vertical (Reel).
         """
         self.audio_path = os.path.abspath(audio_path)
         self.max_duration = max_duration
@@ -201,8 +202,7 @@ class LyricsEngine:
                 result = model.align(
                     audio_array, 
                     external_text, 
-                    language='es',
-                    progress_callback=self.progress_callback
+                    language='es'
                 )
             else:
                 print("   ✍️  MODO TRANSCRIPCIÓN: La IA adivinará la letra...")
@@ -211,8 +211,7 @@ class LyricsEngine:
                     audio_array, 
                     language='es', 
                     vad=False, 
-                    verbose=True,
-                    progress_callback=self.progress_callback
+                    verbose=True
                 )
             
             # Guardar en JSON para futuras ejecuciones
@@ -477,6 +476,9 @@ class LyricsEngine:
         
         # Tamaño dinámico reactivo al kick (latido del texto)
         base_size = int(h * 0.08)
+        if self.is_reel:
+            base_size = int(base_size * 1.5) # Escala adicional para celulares
+            
         kick_bump = int((h * 0.04) * self.smoothed_kick)
         font_size = int((base_size + kick_bump) * scale_mod)
         
@@ -499,7 +501,7 @@ class LyricsEngine:
         
         # Posicionamiento (Abajo vs Centro)
         x = (w - text_w) // 2
-        if self.position == "Centro":
+        if self.position == "Centro" or self.is_reel:
             y = (h - text_h) // 2
         else:
             y = int(h * 0.80) - (text_h // 2)
